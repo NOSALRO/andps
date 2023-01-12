@@ -11,9 +11,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 dataset_folder = os.path.join('data')
 
-names = ["JShape", "Angle", "Khamesh", "LShape", "PShape", "RShape",
-         "Sharpc", "Sine", "Spoon", "Trapezoid", "Worm", "WShape"]
+# names of demos to be used from the Lasa handwritting dataset
+names = ["JShape", "Angle", "Khamesh", "LShape", "PShape", "RShape", "Sharpc", "Sine", "Spoon", "Trapezoid", "Worm", "WShape"]
 
+# "ideal" number of dynamical systems needed for every shape
 num_DSs = [6, 3, 4, 6, 7, 6, 5, 5, 6, 6, 5, 6]
 
 # number of dataset splits (every demo is split into 35 combinations)
@@ -32,17 +33,17 @@ for i in range(len(names)):
 
         # end of dataset creation
         target = X_train[-1]
-
         model = net(dim, num_DS, target, device)
         model.to(device)
 
         batch_size = 64
-        dataset = CustomDataset(X_train.copy(), Y_train.copy())
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         batches_per_epoch = X_train.shape[0]//batch_size
         epochs = 1000
         le_r = 1e-3
         optimizer = torch.optim.AdamW(model.parameters(), lr=le_r, weight_decay=0.1)
+
+        dataset = CustomDataset(X_train.copy(), Y_train.copy())
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
         best_train_loss = np.inf
 
