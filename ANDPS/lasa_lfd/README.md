@@ -15,3 +15,6 @@ Lasa Learning from Demonstration
     └── utils.py  # helper functions
 
 ```
+
+# data
+In order to populate the data folder run the script named "generate_datasets.py" also download the SEDS data from this [link]()
