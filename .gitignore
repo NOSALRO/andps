@@ -128,3 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .vscode/
+
+# ingore generated dataset
+ANDPS/lasa_lfd/data
