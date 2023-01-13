@@ -320,3 +320,17 @@ def lasa_to_numpy(data, ids=[0,1,2,3,4,5,6], smooth_val = 5):
     np_X = pos.transpose()
     np_Y = vel.transpose()
     return np_X, np_Y
+
+def decorate_axis(ax, remove_left=True):
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+    ax.tick_params(axis='x', direction='out')
+    ax.tick_params(axis='y', length=0)
+
+    ax.grid(axis='y', color="0.9", linestyle='-', linewidth=1)
+    ax.grid(axis='x', color="0.9", linestyle='-', linewidth=1)
+    ax.set_axisbelow(True)
+

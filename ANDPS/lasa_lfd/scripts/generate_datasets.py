@@ -12,7 +12,7 @@ names = ["JShape", "Angle", "Khamesh", "LShape", "PShape", "RShape", "Sharpc", "
 if __name__ == "__main__":
     # args = sys.argv[1:]
     n_test = 3
-    dataset_folder = os.path.join('data')
+    dataset_folder = os.path.join('data', 'lasa')
     if len(sys.argv[1:]) > 0:
         n_test = int(sys.argv[1])
     if len(sys.argv[1:]) > 1:
