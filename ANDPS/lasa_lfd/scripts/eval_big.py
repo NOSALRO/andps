@@ -19,7 +19,7 @@ names = ["JShape", "Khamesh", "Sine", "Spoon", "Trapezoid"]
 
 # Corresponding number of dynamical systems per dataset
 lasa_id = [6, 4, 5, 6, 6]
-num_DSs = [6, 6, 6, 5, 5]
+num_DSs = [6, 6, 5, 5, 5]
 # Which split id was used for every dataset
 ks = [10, 25, 7, 5, 24]
 
@@ -33,7 +33,7 @@ for id in range(0, len(names)):
     num_DS = num_DSs[id]
     seds_dataset_folder = os.path.join('data', 'SEDS', name)
 
-   # small workaround for error in file name in Khamesh
+
     path = seds_dataset_folder + '/' + name + '_'+str(k)+'_DS_'+str(lasa_id[id])
 
 
@@ -170,5 +170,5 @@ for id in range(0, len(names)):
 
 
     # plt.show()
-    np.savez('plots/data/'+names[id]+'_'+str(k)+'.npz', X=X, Y=Y, U=U, V=V, dataset_pos=dataset, train_trajectory=trajectory, test_trajectory=test_trajectory, initial_pos=x_init, target_pos=x_tar)
+    np.savez('plots/data/andps/'+names[id]+'_'+str(k)+'.npz', X=X, Y=Y, U=U, V=V, dataset_pos=dataset, train_trajectory=trajectory, test_trajectory=test_trajectory, initial_pos=x_init, target_pos=x_tar)
 
