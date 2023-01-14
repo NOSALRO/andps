@@ -19,17 +19,18 @@ names = ["JShape", "Khamesh", "Sine", "Spoon", "Trapezoid"]
 
 # Corresponding number of dynamical systems per dataset
 lasa_id = [6, 4, 5, 6, 6]
+num_DSs = [6, 6, 6, 5, 5]
 # Which split id was used for every dataset
 ks = [10, 25, 7, 5, 24]
 
 
 dt_global = 0.00432448
 
-for id in range(2, len(names)):
+for id in range(0, len(names)):
     k = ks[id]
     print(names[id], k)
     name = names[id]
-    num_DS = 6
+    num_DS = num_DSs[id]
     seds_dataset_folder = os.path.join('data', 'SEDS', name)
 
    # small workaround for error in file name in Khamesh
