@@ -14,20 +14,20 @@ class TiagoEnv(gym.Env):
         super(TiagoEnv, self).__init__()
 
         # x, y, theta
-        self.state = np.array([[0., 0., 0.]])
+        self.state = np.array([[0., 0.]])
         self.seed = seed
         self.dt = dt
         self.it = 0
         self.max_steps = 1000
-        self.bounds = 3.14
+        self.bounds = 5.
 
         # Define actions and observation space
-        self.action_space = gym.spaces.Box(low=-10., high=10., shape=(3,), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=-self.bounds, high=self.bounds, shape=(1, 3), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=-20., high=20., shape=(2,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-self.bounds, high=self.bounds, shape=(1, 2), dtype=np.float32)
 
         # init robot dart
         self.simu = rd.RobotDARTSimu(self.dt)
-        self.simu.add_checkerboard_floor()
+        self.simu.add_checkerboard_floor(10.,10.)
         self.simu.set_collision_detector("bullet")
         if (enable_graphics):
             graphics = rd.gui.Graphics()
@@ -56,14 +56,14 @@ class TiagoEnv(gym.Env):
     def step(self, action):
 
         self.it += 1
-        self.robot.set_commands(action, ['rootJoint_pos_x', 'rootJoint_pos_y', 'rootJoint_rot_z'])
+        self.robot.set_commands(action, ['rootJoint_pos_x', 'rootJoint_pos_y'])
         self.simu.step_world()
-        self.state = self.robot.positions(['rootJoint_pos_x', 'rootJoint_pos_y', 'rootJoint_rot_z'])
+        self.state = self.robot.positions(['rootJoint_pos_x', 'rootJoint_pos_y'])
         observation = self.state.copy()
 
         err_pos = np.linalg.norm(observation[0:2] - self.target[0, 0:2])
-        err_angle = np.abs(observation[2] - self.target[0, 2])
-        reward = - (0.8*err_pos + 0.2*err_angle)
+
+        reward = - err_pos
         done = False
         if (np.abs(reward) < 1e-2 or self.it == self.max_steps):
             done = True
@@ -86,12 +86,12 @@ class TiagoEnv(gym.Env):
         tf.set_translation(translation)
         self.robot.set_base_pose(tf)
         self.state = self.robot.positions(
-            ['rootJoint_pos_x', 'rootJoint_pos_y', 'rootJoint_rot_z'])
+            ['rootJoint_pos_x', 'rootJoint_pos_y'])
 
     def render(self):
         print(self.state)
 
-env = TiagoEnv(enable_graphics=False)
+env = TiagoEnv(enable_graphics=True)
 
 
 model = algo(SACDensePolicy, env, verbose=1)
