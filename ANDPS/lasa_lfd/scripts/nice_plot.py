@@ -131,7 +131,7 @@ lgnd.legendHandles[1]._sizes = [30]
 lgnd.legendHandles[2]._sizes = [30]
 lgnd.legendHandles[3]._sizes = [30]
 lgnd.legendHandles[4]._sizes = [30]
-# plt.show()
+plt.show()
 # save png
 plt.savefig("plots/results/"+EXPERIMENT+"/" + NICE_NAME + ".png")
 # save pdf
