@@ -12,6 +12,7 @@
 - [ ] Plot SEDS
 - [ ] Get LPV-DS data, drive
 - [ ] Plot LPV-DS
+- [ ] Compute errors + plots
 - [ ] Polish Code
 
 ## Experiment 2

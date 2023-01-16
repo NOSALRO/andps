@@ -43,15 +43,15 @@ def decorate_axis(ax, remove_left=True):
 # EXPERIMENT = 'simple_nn'
 # NICE_NAME = 'NN'
 # TITLE = 'Simple Neural Network'
-EXPERIMENT = 'andps'
-NICE_NAME = 'ANDPs'
-TITLE = 'ANDPs'
+# EXPERIMENT = 'andps'
+# NICE_NAME = 'ANDPs'
+# TITLE = 'ANDPs'
 # EXPERIMENT = 'SEDS'
 # NICE_NAME = 'SEDS'
 # TITLE = 'SEDS'
-# EXPERIMENT = 'LPV-DS'
-# NICE_NAME = 'LPV-DS'
-# TITLE = 'LPV-DS'
+EXPERIMENT = 'lpv'
+NICE_NAME = 'LPV-DS'
+TITLE = 'LPV-DS'
 # # lasa_dataset_folder = os.path.join('data', 'lasa')
 
 
@@ -131,7 +131,7 @@ lgnd.legendHandles[1]._sizes = [30]
 lgnd.legendHandles[2]._sizes = [30]
 lgnd.legendHandles[3]._sizes = [30]
 lgnd.legendHandles[4]._sizes = [30]
-plt.show()
+# plt.show()
 # save png
 plt.savefig("plots/results/"+EXPERIMENT+"/" + NICE_NAME + ".png")
 # save pdf

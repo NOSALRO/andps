@@ -25,3 +25,6 @@ In order to populate the data folder run the script named "generate_datasets.py"
 ![](plots/results/andps/ANDPs.png)
 ## Simple NN
 ![](plots/results/simple_nn/NN.png)
+
+## LPV-DS
+![](plots/results/lpv/LPV-DS.png)
