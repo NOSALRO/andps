@@ -1,14 +1,14 @@
 import gym
-
-import numpy as np
 import dartpy
 from stable_baselines3 import SAC as algo
-
 from utils_sb3 import SACDensePolicy
+import numpy as np
 import RobotDART as rd
 
 
 class TiagoEnv(gym.Env):
+    """Custom Environment that follows gym interface"""
+    metadata = {'render.modes': ['human']}
 
     def __init__(self, enable_graphics=False, seed=-1, dt=0.001):
         super(TiagoEnv, self).__init__()
@@ -22,7 +22,7 @@ class TiagoEnv(gym.Env):
         self.bounds = 5.
 
         # Define actions and observation space
-        self.action_space = gym.spaces.Box(low=-20., high=20., shape=(2,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=-5., high=5., shape=(2,), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=-self.bounds, high=self.bounds, shape=(1, 2), dtype=np.float32)
 
         # init robot dart
@@ -45,11 +45,11 @@ class TiagoEnv(gym.Env):
         self.robot.set_actuator_type("servo", "rootJoint", False, True, False)
 
         # set target
-        self.target = np.array([[-1., 0., 0.]])
+        self.target = np.array([[-1., 0.]])
 
         # add target visualization
         target_tf = dartpy.math.Isometry3()
-        target_tf.set_translation(self.target[0, 0:3])
+        target_tf.set_translation([-1., 0., 0.])
         self.simu.add_visual_robot(rd.Robot.create_ellipsoid(
             [0.4, 0.4, 0.4], target_tf, 'fixed', 1.0, [0.0, 1.0, 0.0, 1.0], "target"))
 
@@ -58,18 +58,20 @@ class TiagoEnv(gym.Env):
         self.it += 1
         self.robot.set_commands(action, ['rootJoint_pos_x', 'rootJoint_pos_y'])
         self.simu.step_world()
-        self.state = self.robot.positions(['rootJoint_pos_x', 'rootJoint_pos_y'])
+        self.state = np.array(self.robot.positions(['rootJoint_pos_x', 'rootJoint_pos_y'])).reshape(1, 2)
         observation = self.state.copy()
 
-        err_pos = np.linalg.norm(observation[0:2] - self.target[0, 0:2])
-
-        reward = - err_pos
+        diff = observation - self.target
+        dist = np.inner(diff, diff)[0][0]
+        # p = 0.2
+        reward = -dist #np.exp(-0.5*dist/(p*p))[0]
         done = False
-        if (np.abs(reward) < 1e-2 or self.it == self.max_steps):
+        # if(dist < 0.1) :
+        #     reward = 1000
+        if (self.it == self.max_steps) or (abs(self.state[0][0]) >= self.bounds or abs(self.state[0][1]) >= self.bounds):
+            self.it == -1
             done = True
-            self.it = -1
         return observation, reward, done, {}
-
     def reset(self):
 
         self.it = 0
@@ -85,8 +87,7 @@ class TiagoEnv(gym.Env):
 
         tf.set_translation(translation)
         self.robot.set_base_pose(tf)
-        self.state = self.robot.positions(
-            ['rootJoint_pos_x', 'rootJoint_pos_y'])
+        self.state = np.array(self.robot.positions(['rootJoint_pos_x', 'rootJoint_pos_y'])).reshape(1,2)
 
     def render(self):
         print(self.state)
