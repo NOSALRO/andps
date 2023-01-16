@@ -18,3 +18,10 @@ Lasa Learning from Demonstration
 
 # data
 In order to populate the data folder run the script named "generate_datasets.py" also download the SEDS data from this [link]()
+
+
+# Results
+## ANDPS
+![](plots/results/andps/ANDPs.png)
+## Simple NN
+![](plots/results/simple_nn/NN.png)
