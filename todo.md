@@ -14,13 +14,7 @@
 - [X] Plot LPV-DS
 - [ ] Compute errors + plots
 - [ ] Polish Code
-
 ## Experiment 2
-- [ ] Train ANDPS with Images
-- [ ] Eval ANDPS with Images
-- [ ] Plot ANDPS with Images
-- [ ] Polish Code
-## Experiment 3
 - [ ] Create dataset script
 - [ ] Train ANDPS with xyz
 - [ ] Train NN with xyz
@@ -29,27 +23,30 @@
 - [ ] Eval ANDPS with perturbation + plots
 - [ ] Eval NN with perturbation + plots
 - [ ] Polish Code
-# Experiment 4
-- [ ] Create dataset script
 - [ ] Train ANDPS with joint space
 - [ ] Train NN with joint space
 - [ ] Eval ANDPS with joint space + plots
 - [ ] Eval NN with joint space + plots
 - [ ] Polish Code
-# Experiment 5
+## Experiment 3
+- [ ] Train ANDPS with Images
+- [ ] Eval ANDPS with Images
+- [ ] Plot ANDPS with Images
+- [ ] Polish Code
+# Experiment 3
 - [ ] Get Dataset
 - [ ] Train Dataset
 - [ ] Eval in simulation
 - [ ] Provide Real Robot Video
 - [ ] Error Table
 - [ ] Polish Code
-# Experiment 6
+# Experiment 4
 - [ ] Get dataset from valerio
 - [ ] Train model
 - [ ] Send model to valerio
 - [ ] Get video from valerio
 - [ ] Polish Code
-# Experiment 7
+# Experiment 5
 - [ ] Come up with an experiment (pref in simu)
 - [ ] Train
 - [ ] Eval
@@ -62,9 +59,8 @@
 
 # Big Horizon To-Do List
 - [ ] Experiment 1 - LfD Lasa
-- [ ] Experiment 2 - Lasa Images
-- [ ] Experiment 3 - RobotDart xyz
-- [ ] Experiment 4 - RobotDart Joint Space
-- [ ] Experiment 5 - RobotDart Euler Angles (Pouring Task)
-- [ ] Experiment 6 - Go1 Follow The line
+- [ ] Experiment 2 - RobotDart xyz, RobotDart Joint Space
+- [ ] Experiment 3 - Lasa Images
+- [ ] Experiment 4 - RobotDart Euler Angles (Pouring Task)
+- [ ] Experiment 5 - Go1 Follow The line
 - [ ] Experiment 7 - RL
