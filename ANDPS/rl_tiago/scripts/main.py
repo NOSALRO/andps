@@ -12,29 +12,25 @@ class TiagoEnv(gym.Env):
 
     def __init__(self, enable_graphics=False, seed=-1, dt=0.01):
         super(TiagoEnv, self).__init__()
-
+        self.enable_graphics = enable_graphics
         # x, y, theta
         self.state = np.array([[0., 0.]])
 
         self.seed = seed
         self.dt = dt
         self.it = 0
-        self.max_steps = 500
+        self.max_steps = 100
         self.bounds = 5.
 
         # Define actions and observation space
-        self.action_space = gym.spaces.Box(low=-2., high=2., shape=(2,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=-5., high=5., shape=(2,), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=-self.bounds, high=self.bounds, shape=(2,), dtype=np.float32)
 
         # init robot dart
         self.simu = rd.RobotDARTSimu(self.dt)
         self.simu.add_checkerboard_floor(10., 10.)
         self.simu.set_collision_detector("bullet")
-        if (enable_graphics):
-            graphics = rd.gui.Graphics()
-            self.simu.set_graphics(graphics)
-            graphics.look_at([0.5, 5., 0.75], [0.5, 0., 0.2])
-            graphics.record_video("Talos.mp4")
+
         # configure robot
         self.robot = rd.Tiago()
         self.simu.add_robot(self.robot)
@@ -46,7 +42,7 @@ class TiagoEnv(gym.Env):
         self.robot.set_actuator_type("servo", "rootJoint", False, True, False)
 
         # set target
-        self.target = np.array([[-1., 0.]])
+        self.target = np.array([-1., 0.])
 
         # add target visualization
         target_tf = dartpy.math.Isometry3()
@@ -63,9 +59,10 @@ class TiagoEnv(gym.Env):
         observation = self.state.copy()
 
         dist = np.linalg.norm(self.target-observation)
-        # dist = np.inner(diff, diff)[0][0]
-        # p = 0.2
-        reward = -dist  # np.exp(-0.5*dist/(p*p))[0]
+        # diff = self.target - observation
+        # dist = np.inner(diff, diff) #[0][0]
+        p = 0.2
+        reward = np.exp(-0.5*dist/(p*p))
         done = False
 
         # penalize large actions
@@ -95,21 +92,27 @@ class TiagoEnv(gym.Env):
         self.state = self.robot.base_pose().translation()[0:2].reshape(1,2)
 
     def render(self):
-        print(self.state)
+        if (self.enable_graphics):
+            graphics = rd.gui.Graphics()
+            self.simu.set_graphics(graphics)
+            graphics.look_at([0.5, 5., 0.75], [0.5, 0., 0.2])
+            graphics.record_video("Talos.mp4")
+        # print(self.state)
 
 
 env = TiagoEnv(enable_graphics=True)
 
 
 model = algo(SACDensePolicy, env, verbose=1)
-model.learn(total_timesteps=100000)
+model.learn(total_timesteps=1000)
 model.save("True")
 # model = algo.load("True.zip")
 
 obs = env.reset()
 for i in range(env.max_steps):
     action, _state = model.predict(obs, deterministic=True)
-    obs, reward, done, info = env.step(action)
-    env.render()
+    obs, reward, done, info = env.step(action.reshape(2,))
+    if i == 0:
+        env.render()
     if done:
         break
