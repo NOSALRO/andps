@@ -2,6 +2,9 @@ import numpy as np
 import RobotDART as rd
 from utils import PIDTask
 from utils import damped_pseudoinverse
+from numpy import asarray
+from numpy import save
+import matplotlib.pyplot as plt
 
 
 enable_graphics = True # set to False if you want to run the script without graphics

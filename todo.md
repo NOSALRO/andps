@@ -15,16 +15,16 @@
 - [ ] Compute errors + plots
 - [ ] Polish Code
 ## Experiment 2
-- [ ] Create dataset script
-- [ ] Train ANDPS with xyz
-- [ ] Train NN with xyz
+- [Χ] Create dataset script
+- [Χ] Train ANDPS with xyz
+- [Χ] Train NN with xyz
 - [ ] Eval ANDPS with xyz + plots
 - [ ] Eval NN with xyz + plots
 - [ ] Eval ANDPS with perturbation + plots
 - [ ] Eval NN with perturbation + plots
 - [ ] Polish Code
-- [ ] Train ANDPS with joint space
-- [ ] Train NN with joint space
+- [Χ] Train ANDPS with joint space
+- [Χ] Train NN with joint space
 - [ ] Eval ANDPS with joint space + plots
 - [ ] Eval NN with joint space + plots
 - [ ] Polish Code
