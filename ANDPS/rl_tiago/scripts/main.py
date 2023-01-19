@@ -19,11 +19,11 @@ class TiagoEnv(gym.Env):
         self.seed = seed
         self.dt = dt
         self.it = 0
-        self.max_steps = 100
+        self.max_steps = 500
         self.bounds = 5.
 
         # Define actions and observation space
-        self.action_space = gym.spaces.Box(low=-5., high=5., shape=(2,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=-1., high=1., shape=(2,), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=-self.bounds, high=self.bounds, shape=(2,), dtype=np.float32)
 
         # init robot dart
@@ -61,8 +61,8 @@ class TiagoEnv(gym.Env):
         dist = np.linalg.norm(self.target-observation)
         # diff = self.target - observation
         # dist = np.inner(diff, diff) #[0][0]
-        p = 0.2
-        reward = np.exp(-0.5*dist/(p*p))
+        p = 0.5
+        reward = np.exp(-0.5*dist/(p*p)) - 0.1 * np.linalg.norm(action)/3
         done = False
 
         # penalize large actions
@@ -103,10 +103,10 @@ class TiagoEnv(gym.Env):
 env = TiagoEnv(enable_graphics=True)
 
 
-model = algo(SACDensePolicy, env, verbose=1)
-model.learn(total_timesteps=1000)
-model.save("True")
-# model = algo.load("True.zip")
+model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.005)
+model.learn(total_timesteps= 500 * 1000)
+model.save("tiago_lab")
+# model = algo.load("tiago_lab.zip")
 
 obs = env.reset()
 for i in range(env.max_steps):
