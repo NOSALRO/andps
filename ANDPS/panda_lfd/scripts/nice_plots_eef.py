@@ -1,9 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
 from palettable.colorbrewer.qualitative import Dark2_8
-colors = Dark2_8.mpl_colors
-
+from palettable.scientific.diverging import Vik_11
+colors = Vik_11.mpl_colors
 
 params = {
     'axes.labelsize': 12,
@@ -43,15 +42,11 @@ def get_index(i, N):
     return N-1
 
 EXPERIMENT = "eef"
-
-
 POLICY = "ANDPS"
-POLICY = "NN"
+# POLICY = "NN"
 
 
 # load data
-
-
 data = np.load("data/"+POLICY+"_spiral_eval_eef.npz", allow_pickle=True)
 
 dt = 0.01
@@ -79,22 +74,17 @@ for k in range(3):
         # ax.set_ylabel('m')
         ax.set_ylabel('EEF')
 
-        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory')
-        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation')
+        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
+        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
     else:
-        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]])
-        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]])
+        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], color=colors[6])
+        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], color=colors[2])
     decorate_axis(ax)
 
 plt.tight_layout(pad=0.4, h_pad=2.5, rect=(0, 0.075, 1, 1))
-# fig.legend(labels=['Demonstrated trajectory', 'Evaluation'])
 
-
-
-
+# plot results with force application
 data = np.load("data/"+POLICY+"_spiral_eval_eef_force_push.npz", allow_pickle=True)
-
-
 demo = np.array([data['demo'][get_index(i, len(data['demo']))] for i in range(N_steps)])
 repro = np.array([data['eef_trajectory'][get_index(i, len(data['eef_trajectory']))] for i in range(N_steps)])
 for k in range(3):
@@ -106,16 +96,18 @@ for k in range(3):
         ax.set_ylabel('EEF')
         force_app_plt = ax.axvline(x=data["time_force"][0], color='k', linestyle='--', linewidth=1, label='Time of force application')
         ax.axvline(x=data["time_force"][1], color='k', linestyle='--', linewidth=1)
-        demo_plt = ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory')
-        eval_plt = ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation')
+        demo_plt = ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
+        eval_plt = ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
     else:
         ax.axvline(x=data["time_force"][0], color='k', linestyle='--', linewidth=1)
         ax.axvline(x=data["time_force"][1], color='k', linestyle='--', linewidth=1)
-        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]])
-        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]])
+        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], color=colors[6])
+        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], color=colors[2])
     decorate_axis(ax)
 
+# add legend
 fig.legend(handles=[force_app_plt,demo_plt[0],eval_plt[0]], loc = "lower center", bbox_to_anchor=(0.5, 0.0005), ncol=3, fancybox=True, shadow=True)
+# save figure
 plt.savefig("plots/" + EXPERIMENT + "_" + POLICY + '.svg', dpi=500)
 plt.savefig("plots/" + EXPERIMENT + "_" + POLICY + '.png', dpi=500)
 plt.show()
