@@ -116,6 +116,6 @@ for k in range(3):
     decorate_axis(ax)
 
 fig.legend(handles=[force_app_plt,demo_plt[0],eval_plt[0]], loc = "lower center", bbox_to_anchor=(0.5, 0.0005), ncol=3, fancybox=True, shadow=True)
-plt.savefig(EXPERIMENT + '.svg', dpi=500)
-plt.savefig(EXPERIMENT + '.png', dpi=500)
+plt.savefig("plots/" + EXPERIMENT + "_" + POLICY + '.svg', dpi=500)
+plt.savefig("plots/" + EXPERIMENT + "_" + POLICY + '.png', dpi=500)
 plt.show()
