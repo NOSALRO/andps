@@ -74,14 +74,12 @@ for k in range(3):
         # ax.set_ylabel('m')
         ax.set_ylabel('EEF')
 
-        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
-        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
-    else:
-        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], color=colors[6])
-        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], color=colors[2])
+    ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], color=colors[6])
+    ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], color=colors[2])
+    ax.scatter([i*dt for i in range(len(demo))][-1], demo[:, ids[k]][-1], c='g',marker ='x',label='Target')
     decorate_axis(ax)
 
-plt.tight_layout(pad=0.4, h_pad=2.5, rect=(0, 0.075, 1, 1))
+
 
 # plot results with force application
 data = np.load("data/"+POLICY+"_spiral_eval_eef_force_push.npz", allow_pickle=True)
@@ -94,19 +92,16 @@ for k in range(3):
     ax.set_xlabel('time (s)')
     if k == 0:
         ax.set_ylabel('EEF')
-        force_app_plt = ax.axvline(x=data["time_force"][0], color='k', linestyle='--', linewidth=1, label='Time of force application')
-        ax.axvline(x=data["time_force"][1], color='k', linestyle='--', linewidth=1)
-        demo_plt = ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
-        eval_plt = ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
-    else:
-        ax.axvline(x=data["time_force"][0], color='k', linestyle='--', linewidth=1)
-        ax.axvline(x=data["time_force"][1], color='k', linestyle='--', linewidth=1)
-        ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], color=colors[6])
-        ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], color=colors[2])
+    force_app_plt = ax.axvline(x=data["time_force"][0], color='k', linestyle='--', linewidth=1, label='Time of force application')
+    ax.axvline(x=data["time_force"][1], color='k', linestyle='--', linewidth=1)
+    demo_plt = ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
+    eval_plt = ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
+    target = ax.scatter([i*dt for i in range(len(demo))][-1], demo[:, ids[k]][-1], c='g',marker ='x',label='Target')
     decorate_axis(ax)
 
 # add legend
-fig.legend(handles=[force_app_plt,demo_plt[0],eval_plt[0]], loc = "lower center", bbox_to_anchor=(0.5, 0.0005), ncol=3, fancybox=True, shadow=True)
+fig.legend(handles=[force_app_plt,demo_plt[0],eval_plt[0], target], loc = "lower center", bbox_to_anchor=(0.5, 0.0005), ncol=4, fancybox=True, shadow=True)
+plt.tight_layout(pad=0.4, h_pad=2.5, rect=(0, 0.075, 1, 1))
 # save figure
 plt.savefig("plots/" + EXPERIMENT + "_" + POLICY + '.svg', dpi=500)
 plt.savefig("plots/" + EXPERIMENT + "_" + POLICY + '.png', dpi=500)
