@@ -145,7 +145,7 @@ print(joints_data.shape)
 print(eef_data.shape)
 
 joints_data = np.asarray(joints_data)
-eef_data = np.asarray(eef_data)
+
 np.save('data/spiral_joint_space.npy', joints_data)
-np.save('data/spiral_eef_space.npy', eef_trajectory)
+np.save('data/spiral_eef_space.npy', eef_data)
 
