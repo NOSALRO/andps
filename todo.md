@@ -1,5 +1,15 @@
-# Brainstorm
 
+# Big Horizon To-Do List
+- [ ] Experiment 1 - LfD Lasa
+- [ ] Experiment 2 - RobotDart xyz, RobotDart Joint Space
+- [X] Experiment 3 - Lasa Images
+- [ ] Experiment 4 - RobotDart Euler Angles (Pouring Task)
+- [ ] Experiment 5 - Go1 Follow The line
+- [ ] Experiment 7 - RL
+- [ ] Update README
+
+
+# Tasks Break Down
 ## Experiment 1
 
 - [X] Train ANDPS Big
@@ -55,13 +65,4 @@
 - [ ] Train
 - [ ] Eval
 - [ ] Plots
-- [ ] Update README
-
-# Big Horizon To-Do List
-- [ ] Experiment 1 - LfD Lasa
-- [ ] Experiment 2 - RobotDart xyz, RobotDart Joint Space
-- [ ] Experiment 3 - Lasa Images
-- [ ] Experiment 4 - RobotDart Euler Angles (Pouring Task)
-- [ ] Experiment 5 - Go1 Follow The line
-- [ ] Experiment 7 - RL
 - [ ] Update README
