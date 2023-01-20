@@ -46,12 +46,10 @@
 - [X] Polish Code
 - [ ] Update README
 # Experiment 3
-- [ ] Get Dataset
-- [ ] Train Dataset
-- [ ] Eval in simulation
-- [ ] Provide Real Robot Video
-- [ ] Error Table
-- [ ] Polish Code
+- [X] Get Dataset
+- [X] Train Dataset
+- [X] Provide Real Robot Video
+- [X] Error Table
 - [ ] Update README
 # Experiment 4
 - [ ] Get dataset from valerio
