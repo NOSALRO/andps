@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
+
 import numpy as np
 import torch
 import pyLasaDataset as lasa
+
 from torchvision import transforms
 from PIL import Image
 from utils import andps_images as net
-
 device = "cpu"
 convert_tensor = transforms.ToTensor()
+
+# w vars needed for streamline plot
 
 
 # Lasa dataset demos
@@ -126,6 +129,8 @@ for d in range(len(data)):
         for jk in range(1, start_idxs.shape[1]):
             init = np.vstack([init, np_X[int(start_idxs[d, jk]), :2]])
 
+
+        x_tar = np_X[original_end_idx-1, :2].numpy().copy()
         # save data
         np.savez("data/lasa_image_data_" + names[d] +".npz", X = X, Y = Y, U = U, V = V, trajectory = trajectory, init = init, x_tar = x_tar, demo = np_X[original_start_idx:original_end_idx, :])
 
