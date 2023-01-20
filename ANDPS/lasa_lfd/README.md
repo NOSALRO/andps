@@ -2,7 +2,10 @@
 Lasa Learning from Demonstration
 **To be updated - placeholder**
 
-# Folder and file description
+# Pipeline
+#![lasa_pipeline](https://user-images.githubusercontent.com/50770773/213599873-f0908c20-26ca-4da1-a449-52fc8d7c7d92.png)
+
+## Folder and file description
 ```
 ├── data # data folder containing the datasets, and the lasa + ds-opt results
 ├── models # trained models for results used in paper
@@ -16,15 +19,16 @@ Lasa Learning from Demonstration
 
 ```
 
-# data
+## Data
 In order to populate the data folder run the script named "generate_datasets.py" also download the SEDS data from this [link]()
 
 
-# Results
-## ANDPS
+## Results
+### ANDPS
 ![](plots/results/andps/ANDPs.png)
-## Simple NN
+
+### Simple NN
 ![](plots/results/simple_nn/NN.png)
 
-## LPV-DS
+### LPV-DS
 ![](plots/results/lpv/LPV-DS.png)
