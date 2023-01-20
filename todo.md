@@ -30,10 +30,10 @@
 - [ ] Polish Code
 - [ ] Update README
 ## Experiment 3
-- [ ] Train ANDPS with Images
-- [ ] Eval ANDPS with Images
-- [ ] Plot ANDPS with Images
-- [ ] Polish Code
+- [X] Train ANDPS with Images
+- [X] Eval ANDPS with Images
+- [X] Plot ANDPS with Images
+- [X] Polish Code
 - [ ] Update README
 # Experiment 3
 - [ ] Get Dataset
