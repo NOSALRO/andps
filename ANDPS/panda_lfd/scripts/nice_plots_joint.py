@@ -42,8 +42,8 @@ def decorate_axis(ax, remove_left=True):
 
 
 EXPERIMENT = 'joint'
-POLICY = "ANDPS"
-# POLICY = "NN"
+# POLICY = "ANDPS"
+POLICY = "NN"
 
 data = np.load("data/" + POLICY + "_spiral_eval_" + EXPERIMENT + ".npz")
 
@@ -78,13 +78,13 @@ for k in range(3):
     if k == 0:
         ax.set_ylabel('radians')
 
-    ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
-    ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
-
+    demo_hndl = ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
+    repro_hndl = ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
+    target_hndl = ax.scatter([i*dt for i in range(len(demo))][-1], demo[:, ids[k]][-1], c='g',marker ='x',label='Target')
     decorate_axis(ax)
 
 plt.tight_layout(pad=0.4, h_pad=2.5, rect=(0, 0.075, 1, 1))
-fig.legend(labels=['Demonstrated trajectory', 'Evaluation'], loc = "lower center", bbox_to_anchor=(0.5, 0.0005), ncol=3, fancybox=True, shadow=True)
+fig.legend(handles = [demo_hndl[0], repro_hndl[0], target_hndl], loc = "lower center", bbox_to_anchor=(0.5, 0.0005), ncol=3, fancybox=True, shadow=True)
 
 
 # save figure

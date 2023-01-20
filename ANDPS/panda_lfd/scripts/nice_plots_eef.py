@@ -94,13 +94,13 @@ for k in range(3):
         ax.set_ylabel('EEF')
     force_app_plt = ax.axvline(x=data["time_force"][0], color='k', linestyle='--', linewidth=1, label='Time of force application')
     ax.axvline(x=data["time_force"][1], color='k', linestyle='--', linewidth=1)
-    demo_plt = ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
-    eval_plt = ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
-    target = ax.scatter([i*dt for i in range(len(demo))][-1], demo[:, ids[k]][-1], c='g',marker ='x',label='Target')
+    demo_hndl = ax.plot([i*dt for i in range(len(demo))], demo[:, ids[k]], label='Demonstrated trajectory', color=colors[6])
+    eval_hndl = ax.plot([i*dt for i in range(len(repro))], repro[:, ids[k]], label='Evaluation', color=colors[2])
+    target_hndl = ax.scatter([i*dt for i in range(len(demo))][-1], demo[:, ids[k]][-1], c='g',marker ='x',label='Target')
     decorate_axis(ax)
 
 # add legend
-fig.legend(handles=[force_app_plt,demo_plt[0],eval_plt[0], target], loc = "lower center", bbox_to_anchor=(0.5, 0.0005), ncol=4, fancybox=True, shadow=True)
+fig.legend(handles=[force_app_plt,demo_hndl[0],eval_hndl[0], target_hndl], loc = "lower center", bbox_to_anchor=(0.5, 0.0005), ncol=4, fancybox=True, shadow=True)
 plt.tight_layout(pad=0.4, h_pad=2.5, rect=(0, 0.075, 1, 1))
 # save figure
 plt.savefig("plots/" + EXPERIMENT + "_" + POLICY + '.svg', dpi=500)
