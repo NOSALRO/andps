@@ -10,7 +10,6 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.sac.policies import SACPolicy
 from torch import nn
 import geotorch
-
 # from td3_utils import ActorAndps
 
 # CAP the standard deviation of the actor
@@ -18,14 +17,11 @@ LOG_STD_MAX = 2
 LOG_STD_MIN = -20
 
 class ActorAndps(nn.Module):
-    def __init__(self, state_dim, action_dim, N = 3):
+    def __init__(self, ds_dim, N=1):
         super(ActorAndps, self).__init__()
         self.N = N
-        self.ds_dim = action_dim
-        self.n_params = action_dim
-        self.dims = state_dim
-        self.x_tar = nn.Parameter(th.randn(self.ds_dim)) #.to(device)
-
+        self.ds_dim = ds_dim
+        self.n_params = ds_dim
 
         self.all_params_B_A = nn.ModuleList(
             [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
@@ -39,26 +35,13 @@ class ActorAndps(nn.Module):
         for i in range(N):
             geotorch.skew(self.all_params_C_A[i])
 
-        self.all_weights = nn.Sequential(
-            nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
+        self.all_weights = nn.Sequential(nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
+        self.x_tar = nn.Parameter(th.randn(self.ds_dim)) #.to(device)
 
 
-    def forward(self, x, disp=False):
-        batch_size = x.shape[0]
-        s_all = th.zeros((1, self.ds_dim)).to(x.device)
-        # w_all = torch.zeros((batch_size, self.N))
-
-        w_all = self.all_weights(x)
-        #w_all = torch.nn.functional.softmax(w_all, dim=1)
-        if disp:
-            print(w_all)
-
-        for i in range(self.N):
-            A = (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight)
-
-            s_all = s_all + th.mul(w_all[:, i].view(batch_size, 1), th.mm(
-                A, (self.x_tar-x).transpose(0, 1)).transpose(0, 1))
-        return s_all
+    def forward(self, x_cur):
+        # print(self.x_tar)
+        return (self.x_tar - x_cur)
 
 class DenseMlp(nn.Module):
     def __init__(

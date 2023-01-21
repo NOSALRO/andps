@@ -19,7 +19,7 @@ class TiagoEnv(gym.Env):
         self.seed = seed
         self.dt = dt
         self.it = 0
-        self.max_steps = 500
+        self.max_steps = 800
         self.bounds = 5.
 
         # Define actions and observation space
@@ -39,7 +39,7 @@ class TiagoEnv(gym.Env):
         self.reset_robot()
 
         # Control base - make the base fully controllable
-        self.robot.set_actuator_type("servo", "rootJoint", False, True, False)
+        self.robot.set_actuator_type("velocity", "rootJoint", False, True, False)
 
         # set target
         self.target = np.array([-1., 0.])
@@ -61,8 +61,8 @@ class TiagoEnv(gym.Env):
         dist = np.linalg.norm(self.target-observation)
         # diff = self.target - observation
         # dist = np.inner(diff, diff) #[0][0]
-        p = 0.5
-        reward = np.exp(-0.5*dist/(p*p)) - 0.1 * np.linalg.norm(action)/3
+        p = 0.4
+        reward = np.exp(-0.5*dist/(p*p)) #- 0.1 * np.linalg.norm(action)/3
         done = False
 
         # penalize large actions
@@ -86,10 +86,10 @@ class TiagoEnv(gym.Env):
         self.robot.set_position_enforced(True)
         translation = tf.translation()
         translation[0] = 2.5
-        self.robot.set_positions([0], ['rootJoint_rot_z'])
         tf.set_translation(translation)
         self.robot.set_base_pose(tf)
         self.state = self.robot.base_pose().translation()[0:2].reshape(1,2)
+        self.robot.set_positions([0], ['rootJoint_rot_z'])
 
     def render(self):
         if (self.enable_graphics):
@@ -103,10 +103,11 @@ class TiagoEnv(gym.Env):
 env = TiagoEnv(enable_graphics=True)
 
 
-model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.005)
-model.learn(total_timesteps= 500 * 1000)
-model.save("tiago_lab")
-# model = algo.load("tiago_lab.zip")
+model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)
+model = algo.load("tiago_lab_n.zip")
+# model.learn(total_timesteps= 800 * 1000)
+# model.save("tiago_lab_n")
+
 
 obs = env.reset()
 for i in range(env.max_steps):
