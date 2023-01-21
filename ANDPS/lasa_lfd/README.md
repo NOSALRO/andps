@@ -1,4 +1,4 @@
-# Experiment 1
+# mitating 2D Trajectories (Experiment 1)
 Lasa Learning from Demonstration
 **To be updated - placeholder**
 
