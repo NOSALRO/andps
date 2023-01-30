@@ -17,7 +17,7 @@ LOG_STD_MAX = 2
 LOG_STD_MIN = -20
 
 class ActorAndps(nn.Module):
-    def __init__(self, ds_dim, N=1):
+    def __init__(self, ds_dim, N=2):
         super(ActorAndps, self).__init__()
         self.N = N
         self.ds_dim = ds_dim
