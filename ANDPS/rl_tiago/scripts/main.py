@@ -4,6 +4,8 @@ from stable_baselines3 import SAC as algo
 from utils_sb3 import SACDensePolicy
 import numpy as np
 import RobotDART as rd
+import matplotlib.pyplot as plt
+import scipy.stats
 
 
 class TiagoEnv(gym.Env):
@@ -13,22 +15,26 @@ class TiagoEnv(gym.Env):
     def __init__(self, enable_graphics=False, seed=-1, dt=0.01):
         super(TiagoEnv, self).__init__()
         self.enable_graphics = enable_graphics
+
         # x, y, theta
         self.state = np.array([[0., 0.]])
 
         self.seed = seed
         self.dt = dt
         self.it = 0
+        self.total_it = 0
         self.max_steps = 800
         self.bounds = 5.
 
         # Define actions and observation space
-        self.action_space = gym.spaces.Box(low=-1., high=1., shape=(2,), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=-self.bounds, high=self.bounds, shape=(2,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(
+            low=-3., high=3., shape=(2,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(
+            low=-self.bounds, high=self.bounds, shape=(2,), dtype=np.float32)
 
         # init robot dart
         self.simu = rd.RobotDARTSimu(self.dt)
-        self.simu.add_checkerboard_floor(10., 10.)
+        self.simu.add_checkerboard_floor()
         self.simu.set_collision_detector("fcl")
 
         # configure robot
@@ -47,21 +53,26 @@ class TiagoEnv(gym.Env):
         # add target visualization
         target_tf = dartpy.math.Isometry3()
         target_tf.set_translation([-1., 0., 0.])
-        self.simu.add_visual_robot(rd.Robot.create_ellipsoid([0.4, 0.4, 0.4], target_tf, 'fixed', 1.0, [0.0, 1.0, 0.0, 1.0], "target"))
+        self.simu.add_visual_robot(rd.Robot.create_ellipsoid(
+            [0.4, 0.4, 0.4], target_tf, 'fixed', 1.0, [0.0, 1.0, 0.0, 1.0], "target"))
 
         obstacle_tf = dartpy.math.Isometry3()
         obstacle_tf.set_translation([0., 0., 0.])
-        obstacle_tf.set_rotation(dartpy.math.eulerXYZToMatrix( [0, 0.,np.pi/2.]))
+        obstacle_tf.set_rotation(
+            dartpy.math.eulerXYZToMatrix([0, 0., np.pi/2.]))
 
-
-        self.simu.add_robot(rd.Robot.create_box([4.0, 1.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle"))
+        self.simu.add_robot(rd.Robot.create_box(
+            [4.0, 1.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle"))
         obstacle_tf.set_translation([-1., 2., 0.])
-        self.simu.add_robot(rd.Robot.create_box([1.0, 3.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_2"))
+        self.simu.add_robot(rd.Robot.create_box(
+            [1.0, 3.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_2"))
         obstacle_tf.set_translation([-1., -2., 0.])
-        self.simu.add_robot(rd.Robot.create_box([1.0, 3.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_3"))
-        self.history = np.array(self.state.copy())
-
-
+        self.simu.add_robot(rd.Robot.create_box(
+            [1.0, 3.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_3"))
+        self.history = History()
+        self.episode_history = np.array(self.state.copy())
+        if (enable_graphics):
+            self.render()
 
     def step(self, action):
 
@@ -73,49 +84,42 @@ class TiagoEnv(gym.Env):
         self.state = self.robot.base_pose().translation()[0:2]
         observation = self.state.copy()
 
-
-        # diff = self.target - observation
-        # dist = np.inner(diff, diff) #[0][0]
-
-
-
-        # the reward function consists of two parts:
-        # 1. the distance to the target
-        # 2. the exploration of the state space
-        # the exploration is done by adding a penalty for states that have been visited before in initial iterations
-        # the penalty is reduced over time
+        # update episode history
+        self.episode_history = np.append(
+            self.episode_history, [observation], axis=0)
 
         # calculate the distance to the target
         dist = np.linalg.norm(self.target-observation)
+
         p = 0.4
         reward_dist = np.exp(-0.5*dist/(p*p))
 
         # calculate the exploration reward
         # see if current state is in history with a tolerance of 0.1
 
-        in_hist = np.any(np.linalg.norm(self.history-observation, axis=1) < 0.1)
-        if in_hist:
+        if self.history._in_hist(observation):
             reward_exp = 0.0
         else:
-            reward_exp = 1.0
-            self.history = np.append(self.history, [observation], axis=0)
-            if(len(self.history))>2000:
-                self.history = self.history[1:]
+            # get index of the closest point in history
+            reward_exp = self.history._get_closest_point_dist(observation)
 
         # calculate the reward (shift weights based on iteration number)
         reward = reward_dist + reward_exp
 
-
-
         done = False
 
-        # penalize large actions
-        # reward+= -0.1*np.linalg.norm(action)
-        # if(dist < 0.1) :
-        #     reward = 1000
         if (self.it == self.max_steps) or (abs(self.state[0]) >= self.bounds or abs(self.state[1]) >= self.bounds):
-            self.it == -1
             done = True
+            # update history every 10 episodes
+            if (self.total_it % (self.max_steps * 10) == 0):
+                for point in self.episode_history:
+                    if (not self.history._in_hist(point)):
+                        self.history.add_point(point)
+                # print(self.history._points)
+                print("History updated")
+            self.total_it += self.it
+            self.it == -1
+
         return observation, reward, done, {}
 
     def reset(self):
@@ -133,11 +137,13 @@ class TiagoEnv(gym.Env):
         translation[0] = 2.5
         tf.set_translation(translation)
         self.robot.set_base_pose(tf)
-        self.state = self.robot.base_pose().translation()[0:2].reshape(1,2)
+        self.state = self.robot.base_pose().translation()[0:2].reshape(1, 2)
         self.robot.set_positions([0], ['rootJoint_rot_z'])
-        self.robot.set_force_lower_limits([-100., -100.], ['rootJoint_pos_x', 'rootJoint_pos_y'])
-        self.robot.set_force_upper_limits([100., 100,], ['rootJoint_pos_x', 'rootJoint_pos_y'])
-
+        self.robot.set_force_lower_limits(
+            [-100., -100.], ['rootJoint_pos_x', 'rootJoint_pos_y'])
+        self.robot.set_force_upper_limits(
+            [100., 100, ], ['rootJoint_pos_x', 'rootJoint_pos_y'])
+        self.episode_history = np.array(self.state.copy())
 
     def render(self):
         if (self.enable_graphics):
@@ -148,12 +154,96 @@ class TiagoEnv(gym.Env):
         # print(self.state)
 
 
-env = TiagoEnv(enable_graphics=False)
+# class that holds the history of the robot's states, also has a grid to store the density of the states
+# the grid is 100x100
+
+class History:
+    def __init__(self, max_capacity=4000):
+        self._max_capacity = max_capacity
+
+        self._points = []
+        self._cache = {}
+
+    def add_point(self, point):
+        # point needs to be a np.array
+        self._points.append(point)
+
+        if len(self._points) > self._max_capacity:
+            self._sparsify()
+
+    def dist(self, point):
+        d = None
+        for i in range(len(self._points)):
+            di = self._calc_dist(self._points[i], point)
+            if d is None or di < d:
+                d = di
+        return d
+
+    def _calc_dist(self, p1, p2):
+        key = (p2[0], p2[1], p1[0], p1[1])
+        if key in self._cache:
+            return self._cache[key]
+        key = (p1[0], p1[1], p2[0], p2[1])
+        if key in self._cache:
+            return self._cache[key]
+        d = np.linalg.norm(p1 - p2)
+        self._cache[key] = d
+
+        return d
+
+    def _sparsify(self):
+        N = len(self._points)
+        distances = np.zeros((N, N))
+        for i in range(N):
+            for j in range(i+1, N):
+                d = self._calc_dist(self._points[i], self._points[j])
+                distances[i, j] = d
+                distances[j, i] = d
+
+        while len(self._points) > self._max_capacity:
+            i = self._get_most_dense_point(N, distances)
+            distances = np.delete(distances, i, axis=0)
+            distances = np.delete(distances, i, axis=1)
+            del self._points[i]
+            N = len(self._points)
+
+    def _get_most_dense_point(self, N, distances, D=5):
+        max_d = None
+        max_i = None
+        for i in range(N):
+            dd = np.copy(distances[i, :])
+            d = np.sum(np.sort(dd)[1:D+1])
+
+            if max_i is None or d < max_d:
+                max_d = d
+                max_i = i
+        return max_i
+
+    def _in_hist(self, point):
+        # find if point is in the history with a threshold of 0.1
+        if (len(self._points) == 0):
+            return False
+        if (np.any(np.linalg.norm(self._points-point, axis=1) < 0.1)):
+            return True
+        else:
+            return False
+
+    def _get_closest_point_dist(self, point):
+        # find the distance to the closest point in the history
+        if (len(self._points) == 0):
+            return 0
+        else:
+            a = np.min(np.linalg.norm(self._points-point, axis=1))
+            # print(a)
+            return a
+
+
+env = TiagoEnv(enable_graphics=True)
 
 model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)
 # model = algo.load("tiago_lab_wall_new_reward")
-model.learn(total_timesteps= 800 * 1000)
-model.save("tiago_lab_wall_new_reward")
+model.learn(total_timesteps=800 * 1000)
+model.save("tiago_lab_new_reward")
 
 
 obs = env.reset()
