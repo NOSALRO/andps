@@ -28,7 +28,7 @@ class TiagoEnv(gym.Env):
 
         # Define actions and observation space
         self.action_space = gym.spaces.Box(
-            low=-3., high=3., shape=(2,), dtype=np.float32)
+            low=-1., high=1., shape=(2,), dtype=np.float32)
         self.observation_space = gym.spaces.Box(
             low=-self.bounds, high=self.bounds, shape=(2,), dtype=np.float32)
 
@@ -56,19 +56,49 @@ class TiagoEnv(gym.Env):
         self.simu.add_visual_robot(rd.Robot.create_ellipsoid(
             [0.4, 0.4, 0.4], target_tf, 'fixed', 1.0, [0.0, 1.0, 0.0, 1.0], "target"))
 
+        # add obstacle π shape
         obstacle_tf = dartpy.math.Isometry3()
-        obstacle_tf.set_translation([0., 0., 0.])
+        obstacle_tf.set_translation([0., 0., 0.25])
         obstacle_tf.set_rotation(
             dartpy.math.eulerXYZToMatrix([0, 0., np.pi/2.]))
+        self.simu.add_robot(rd.Robot.create_box(
+            [4.0, 1.0, 0.5], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle"))
 
+        # imitate bouning box with spheres
+        temp_tf = dartpy.math.Isometry3()
+
+        # temp_tf.set_translation([-2.5, 1.5, 0.5])
+        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "obstacle_1"))
+
+        # temp_tf.set_translation([2.5, 0.5, 0.5])
+        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "obstacle_1"))
+        # temp_tf.set_translation([2.5, -0.5, 0.5])
+        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "obstacle_1"))
+
+        obstacle_tf.set_translation([-1., 2., 0.25])
         self.simu.add_robot(rd.Robot.create_box(
-            [4.0, 1.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle"))
-        obstacle_tf.set_translation([-1., 2., 0.])
+            [1.0, 3.0, 0.5], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_2"))
+
+        obstacle_tf.set_translation([-1., -2., 0.25])
         self.simu.add_robot(rd.Robot.create_box(
-            [1.0, 3.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_2"))
-        obstacle_tf.set_translation([-1., -2., 0.])
+            [1.0, 3.0, 0.5], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_3"))
+
+        # create wall
+        obstacle_tf.set_translation([-5., -0., 1.0])
         self.simu.add_robot(rd.Robot.create_box(
-            [1.0, 3.0, 3.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_3"))
+            [10., 0.5, 2.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_1"))
+
+        obstacle_tf.set_translation([5., -0., 1.0])
+        self.simu.add_robot(rd.Robot.create_box(
+            [10., 0.5, 2.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_2"))
+
+        obstacle_tf.set_translation([0., -5., 1.0])
+        self.simu.add_robot(rd.Robot.create_box(
+            [0.5, 10.0, 2.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_3"))
+
+        obstacle_tf.set_translation([0., 5., 1.0])
+        self.simu.add_robot(rd.Robot.create_box(
+            [0.5, 10.0, 2.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_4"))
         self.history = History()
         self.episode_history = np.array(self.state.copy())
         if (enable_graphics):
@@ -95,16 +125,14 @@ class TiagoEnv(gym.Env):
         reward_dist = np.exp(-0.5*dist/(p*p))
 
         # calculate the exploration reward
-        # see if current state is in history with a tolerance of 0.1
+        reward_exp = self.history._get_closest_point_dist(observation)
 
-        if self.history._in_hist(observation):
-            reward_exp = 0.0
-        else:
-            # get index of the closest point in history
-            reward_exp = self.history._get_closest_point_dist(observation)
+        iters = int(self.total_it / (self.max_steps * 10))
+        w0 = 1.
+        w1 = 1000. / (iters + 1)
 
         # calculate the reward (shift weights based on iteration number)
-        reward = reward_dist + reward_exp
+        reward = w0 * reward_dist + w1 * reward_exp
 
         done = False
 
@@ -118,12 +146,11 @@ class TiagoEnv(gym.Env):
                 # print(self.history._points)
                 print("History updated")
             self.total_it += self.it
-            self.it == -1
+            self.it = -1
 
         return observation, reward, done, {}
 
     def reset(self):
-
         self.it = 0
         self.reset_robot()
         return self.state
@@ -149,7 +176,7 @@ class TiagoEnv(gym.Env):
         if (self.enable_graphics):
             graphics = rd.gui.Graphics()
             self.simu.set_graphics(graphics)
-            graphics.look_at([0.5, 5., 0.75], [0.5, 0., 0.2])
+            graphics.look_at([-5, 3., 10.75], [0., 0., 0.])
             graphics.record_video("Tiago.mp4")
         # print(self.state)
 
@@ -238,7 +265,7 @@ class History:
             return a
 
 
-env = TiagoEnv(enable_graphics=True)
+env = TiagoEnv(enable_graphics=False)
 
 model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)
 # model = algo.load("tiago_lab_wall_new_reward")

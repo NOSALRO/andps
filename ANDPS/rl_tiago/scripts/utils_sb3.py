@@ -4,7 +4,8 @@ import gym
 import torch as th
 import torch.nn.functional as F
 from stable_baselines3.common.distributions import SquashedDiagGaussianDistribution, StateDependentNoiseDistribution
-from stable_baselines3.common.policies import BaseModel, BasePolicy#, create_sde_features_extractor, register_policy
+# , create_sde_features_extractor, register_policy
+from stable_baselines3.common.policies import BaseModel, BasePolicy
 from stable_baselines3.common.preprocessing import get_action_dim
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.sac.policies import SACPolicy
@@ -16,8 +17,9 @@ import geotorch
 LOG_STD_MAX = 2
 LOG_STD_MIN = -20
 
+
 class ActorAndps(nn.Module):
-    def __init__(self, ds_dim, N=2):
+    def __init__(self, ds_dim, N=3):
         super(ActorAndps, self).__init__()
         self.N = N
         self.ds_dim = ds_dim
@@ -35,13 +37,19 @@ class ActorAndps(nn.Module):
         for i in range(N):
             geotorch.skew(self.all_params_C_A[i])
 
-        self.all_weights = nn.Sequential(nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
-        self.x_tar = nn.Parameter(th.randn(self.ds_dim)) #.to(device)
+        self.all_weights = nn.Sequential(
+            nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
+        self.x_tar = nn.Parameter(th.randn(self.ds_dim))  # .to(device)
 
+    def forward(self, x):
+        batch_size = x.shape[0]
+        s_all = th.zeros((1, self.ds_dim)).to(x.device)
+        w_all = self.all_weights(x)
+        for i in range(self.N):
+            A = (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight)
+            s_all = s_all + th.mul(w_all[:, i].view(batch_size, 1), th.mm(A, (self.x_tar-x).transpose(0, 1)).transpose(0, 1))
+        return s_all
 
-    def forward(self, x_cur):
-        # print(self.x_tar)
-        return (self.x_tar - x_cur)
 
 class DenseMlp(nn.Module):
     def __init__(
@@ -141,8 +149,10 @@ class DenseActor(BasePolicy):
         self.clip_mean = clip_mean
 
         action_dim = get_action_dim(self.action_space)
-        self.latent_pi = ActorAndps(action_dim, action_dim) #DenseMlp(features_dim, -1, net_arch[0])
-        last_layer_dim = action_dim #net_arch[-1] if len(net_arch) > 0 else features_dim
+        # DenseMlp(features_dim, -1, net_arch[0])
+        self.latent_pi = ActorAndps(action_dim, action_dim)
+        # net_arch[-1] if len(net_arch) > 0 else features_dim
+        last_layer_dim = action_dim
 
         if self.use_sde:
             latent_sde_dim = last_layer_dim
@@ -161,10 +171,12 @@ class DenseActor(BasePolicy):
             # Avoid numerical issues by limiting the mean of the Gaussian
             # to be in [-clip_mean, clip_mean]
             if clip_mean > 0.0:
-                self.mu = nn.Sequential(self.mu, nn.Hardtanh(min_val=-clip_mean, max_val=clip_mean))
+                self.mu = nn.Sequential(self.mu, nn.Hardtanh(
+                    min_val=-clip_mean, max_val=clip_mean))
         else:
             self.action_dist = SquashedDiagGaussianDistribution(action_dim)
-            self.mu = nn.Identity(action_dim) #nn.Linear(last_layer_dim, action_dim)
+            # nn.Linear(last_layer_dim, action_dim)
+            self.mu = nn.Identity(action_dim)
             self.log_std = nn.Linear(action_dim, action_dim)
 
     def _get_constructor_parameters(self) -> Dict[str, Any]:
@@ -196,7 +208,8 @@ class DenseActor(BasePolicy):
         :return:
         """
         msg = "get_std() is only available when using gSDE"
-        assert isinstance(self.action_dist, StateDependentNoiseDistribution), msg
+        assert isinstance(self.action_dist,
+                          StateDependentNoiseDistribution), msg
         return self.action_dist.get_std(self.log_std)
 
     def reset_noise(self, batch_size: int = 1) -> None:
@@ -205,7 +218,8 @@ class DenseActor(BasePolicy):
         :param batch_size:
         """
         msg = "reset_noise() is only available when using gSDE"
-        assert isinstance(self.action_dist, StateDependentNoiseDistribution), msg
+        assert isinstance(self.action_dist,
+                          StateDependentNoiseDistribution), msg
         self.action_dist.sample_weights(self.log_std, batch_size=batch_size)
 
     def get_action_dist_params(self, obs: th.Tensor) -> Tuple[th.Tensor, th.Tensor, Dict[str, th.Tensor]]:
@@ -331,11 +345,13 @@ class SACDensePolicy(SACPolicy):
         )
 
     def make_actor(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> DenseActor:
-        actor_kwargs = self._update_features_extractor(self.actor_kwargs, features_extractor)
+        actor_kwargs = self._update_features_extractor(
+            self.actor_kwargs, features_extractor)
         return DenseActor(**actor_kwargs).to(self.device)
 
     def make_critic(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> DenseContinuousCritic:
-        critic_kwargs = self._update_features_extractor(self.critic_kwargs, features_extractor)
+        critic_kwargs = self._update_features_extractor(
+            self.critic_kwargs, features_extractor)
         return DenseContinuousCritic(**critic_kwargs).to(self.device)
 
     def forward(self, obs: th.Tensor, deterministic: bool = False) -> th.Tensor:
