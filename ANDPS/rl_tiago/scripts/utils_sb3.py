@@ -19,7 +19,7 @@ LOG_STD_MIN = -20
 
 
 class ActorAndps(nn.Module):
-    def __init__(self, ds_dim, N=3):
+    def __init__(self, ds_dim, N = 2):
         super(ActorAndps, self).__init__()
         self.N = N
         self.ds_dim = ds_dim
@@ -150,7 +150,7 @@ class DenseActor(BasePolicy):
 
         action_dim = get_action_dim(self.action_space)
         # DenseMlp(features_dim, -1, net_arch[0])
-        self.latent_pi = ActorAndps(action_dim, action_dim)
+        self.latent_pi = ActorAndps(action_dim)
         # net_arch[-1] if len(net_arch) > 0 else features_dim
         last_layer_dim = action_dim
 
