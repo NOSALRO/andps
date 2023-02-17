@@ -19,9 +19,10 @@ LOG_STD_MIN = -20
 
 
 class ActorAndps(nn.Module):
-    def __init__(self, ds_dim, N = 2):
+    def __init__(self, ds_dim, N=2):
         super(ActorAndps, self).__init__()
         self.N = N
+        # print("N = ", N)
         self.ds_dim = ds_dim
         self.n_params = ds_dim
 
@@ -37,11 +38,10 @@ class ActorAndps(nn.Module):
         for i in range(N):
             geotorch.skew(self.all_params_C_A[i])
 
-        self.all_weights = nn.Sequential(
-            nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
+        self.all_weights = nn.Sequential(nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
         self.x_tar = nn.Parameter(th.randn(self.ds_dim))  # .to(device)
 
-    def forward(self, x):
+    def forward(self, x, ):
         batch_size = x.shape[0]
         s_all = th.zeros((1, self.ds_dim)).to(x.device)
         w_all = self.all_weights(x)

@@ -7,9 +7,39 @@ import numpy as np
 import RobotDART as rd
 import matplotlib.pyplot as plt
 import scipy.stats
+from typing import Callable
 
 MAX_STEPS = 1600
+EPOCHS = 2000
 
+
+def linear_schedule(initial_value: float) -> Callable[[float], float]:
+    """
+    Linear learning rate schedule.
+
+    :param initial_value: Initial learning rate.
+    :return: schedule that computes
+      current learning rate depending on remaining progress
+    """
+    def func(progress_remaining: float) -> float:
+        """
+        Progress will decrease from 1 (beginning) to 0.
+
+        :param progress_remaining:
+        :return: current learning rate
+        """
+        # print progress every 1000 stpe
+        # print("Lr: ", progress_remaining * initial_value)
+        return progress_remaining * initial_value
+
+    return func
+
+def angle_wrap(theta):
+    while theta < -np.pi:
+        theta += 2 * np.pi
+    while theta > np.pi:
+        theta -= 2 * np.pi
+    return theta
 class TiagoEnv(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
@@ -19,20 +49,18 @@ class TiagoEnv(gym.Env):
         self.enable_graphics = enable_graphics
 
         # x, y, theta
-        self.state = np.array([[0., 0.]])
+        self.state = np.array([[0., 0., 0.]])
 
         self.seed = seed
         self.dt = dt
         self.it = 0
-        self.total_it = 0
+        self.total_episodes = 0
         self.max_steps = MAX_STEPS
         self.bounds = 5.
 
         # Define actions and observation space
-        self.action_space = gym.spaces.Box(
-            low=-1., high=1., shape=(2,), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(
-            low=-self.bounds, high=self.bounds, shape=(2,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=np.array([-self.bounds, -self.bounds, -np.pi]), high=np.array([self.bounds,self.bounds,np.pi]), shape=(3,), dtype=np.float32)
 
         # init robot dart
         self.simu = rd.RobotDARTSimu(self.dt)
@@ -50,60 +78,50 @@ class TiagoEnv(gym.Env):
         self.robot.set_actuator_type("servo", "rootJoint", False, True, False)
 
         # set target
-        self.target = np.array([-1., 0.])
+        self.target = np.array([-1, -1.2, -np.pi/2])
 
         # set init position
         self.init_obs = self.robot.base_pose().translation()[0:2]
 
         # add target visualization
         target_tf = dartpy.math.Isometry3()
-        target_tf.set_translation([-1., 0., 0.])
-        self.simu.add_visual_robot(rd.Robot.create_ellipsoid(
-            [0.4, 0.4, 0.4], target_tf, 'fixed', 1.0, [0.0, 1.0, 0.0, 1.0], "target"))
+        target_tf.set_translation([-1., -1.2, 0.])
+        self.simu.add_visual_robot(rd.Robot.create_ellipsoid([0.4, 0.4, 0.4], target_tf, 'fixed', 1.0, [0.0, 1.0, 0.0, 1.0], "target"))
 
-        # add obstacle π shape
-        obstacle_tf = dartpy.math.Isometry3()
-        obstacle_tf.set_translation([0., 0., 0.25])
-        obstacle_tf.set_rotation(
-            dartpy.math.eulerXYZToMatrix([0, 0., np.pi/2.]))
-        self.simu.add_robot(rd.Robot.create_box(
-            [4.0, 1.0, 0.5], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle"))
+        # add counter
+        counter_tf = dartpy.math.Isometry3()
+        counter_tf.set_translation([-1., -2., 0.25])
+        # counter_tf.set_rotation(dartpy.math.eulerXYZToMatrix([0, 0., np.pi/2.]))
+        self.simu.add_robot(rd.Robot.create_box([4.0, 1.0, 0.5], counter_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "counter"))
 
         # imitate bouning box with spheres
         # temp_tf = dartpy.math.Isometry3()
 
         # temp_tf.set_translation([-2.5, 1.5, 0.5])
-        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "obstacle_1"))
+        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "counter_1"))
 
         # temp_tf.set_translation([2.5, 0.5, 0.5])
-        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "obstacle_1"))
+        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "counter_1"))
         # temp_tf.set_translation([2.5, -0.5, 0.5])
-        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "obstacle_1"))
+        # simu.add_visual_robot(rd.Robot.create_ellipsoid([0.2,0.2,0.2], temp_tf, 'fixed', 1000.0, [0., 1., 0., 1.0], "counter_1"))
 
-        obstacle_tf.set_translation([-1., 2., 0.25])
-        self.simu.add_robot(rd.Robot.create_box(
-            [1.0, 3.0, 0.5], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_2"))
-
-        obstacle_tf.set_translation([-1., -2., 0.25])
-        self.simu.add_robot(rd.Robot.create_box(
-            [1.0, 3.0, 0.5], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "obstacle_3"))
 
         # # create wall
-        # obstacle_tf.set_translation([-5., -0., 1.0])
+        # counter_tf.set_translation([-5., -0., 1.0])
         # self.simu.add_robot(rd.Robot.create_box(
-        #     [10., 0.5, 2.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_1"))
+        #     [10., 0.5, 2.0], counter_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_1"))
 
-        # obstacle_tf.set_translation([5., -0., 1.0])
+        # counter_tf.set_translation([5., -0., 1.0])
         # self.simu.add_robot(rd.Robot.create_box(
-        #     [10., 0.5, 2.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_2"))
+        #     [10., 0.5, 2.0], counter_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_2"))
 
-        # obstacle_tf.set_translation([0., -5., 1.0])
+        # counter_tf.set_translation([0., -5., 1.0])
         # self.simu.add_robot(rd.Robot.create_box(
-        #     [0.5, 10.0, 2.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_3"))
+        #     [0.5, 10.0, 2.0], counter_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_3"))
 
-        # obstacle_tf.set_translation([0., 5., 1.0])
+        # counter_tf.set_translation([0., 5., 1.0])
         # self.simu.add_robot(rd.Robot.create_box(
-        #     [0.5, 10.0, 2.0], obstacle_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_4"))
+        #     [0.5, 10.0, 2.0], counter_tf, 'fixed', 1000.0, [0.8, 0.8, 0.8, 1.0], "wall_4"))
 
         # self.history = History()
         # self.episode_history = np.array(self.state.copy())
@@ -115,10 +133,10 @@ class TiagoEnv(gym.Env):
     def step(self, action):
         self.it += 1
         self.state_prev = self.robot.base_pose().translation()[0:2]
-        self.robot.set_commands(action, ['rootJoint_pos_x', 'rootJoint_pos_y'])
-
+        self.robot.set_commands(action[:-1], ['rootJoint_pos_x', 'rootJoint_pos_y'])
+        self.robot.set_commands([action[-1]], ['rootJoint_rot_z'])
         self.simu.step_world()
-        self.state = self.robot.base_pose().translation()[0:2]
+        self.state = self.get_state()
         observation = self.state.copy()
 
         # # update episode history
@@ -126,27 +144,30 @@ class TiagoEnv(gym.Env):
         #     self.episode_history, [observation], axis=0)
 
         # calculate the distance to the target
-        dist = np.linalg.norm(self.target - observation)
+        dist = np.linalg.norm(self.target[0:2] - observation[0:2])
 
         # iters = int(self.total_it / (self.max_steps * 10))
         # max_iters = 100
         # p = (1. - min(1., iters/float(max_iters)))*0.6 + 0.4
-        # print(p)
-        # reward_dist = np.exp(-0.5 * dist * dist / (p * p))
-        reward_dist = -dist * dist
+        # # print(p)
+        # reward_pos = np.exp(-0.5 * dist * dist / (p * p))
+        reward_pos = -dist * dist
 
         # calculate the exploration reward
-        reward_exp = np.linalg.norm(self.init_obs - observation)#self.history._get_closest_point_dist(observation)
-        if (self.init_obs - observation)[0] < 0.:
-            reward_exp = 0.#-reward_exp * reward_exp
-        else:
-            reward_exp = reward_exp * reward_exp
-
-        w0 = 4.
-        w1 = 1. #1000. / (iters + 1)
+        # reward_exp = np.linalg.norm(self.init_obs - observation)#self.history._get_closest_point_dist(observation)
+        # if (self.init_obs - observation)[0] < 0.:
+        #     reward_exp = 0.#-reward_exp * reward_exp
+        # else:
+        #     reward_exp = reward_exp * reward_exp
+        reward_rot = -np.sin(observation[2])
+        w0 = 1.
+        w1 = 1.
+        # if(self.it> self.max_steps * 0.7):
+        #     w0 *= 10
+        #     w1*=2
 
         # calculate the reward (shift weights based on iteration number)
-        reward = w0 * reward_dist + w1 * reward_exp
+        reward = w0 * reward_pos + w1 * reward_rot
 
         done = False
 
@@ -154,7 +175,9 @@ class TiagoEnv(gym.Env):
 
         if (self.it == self.max_steps) or (abs(self.state[0]) >= self.bounds or abs(self.state[1]) >= self.bounds):
             done = True
-            print(self.episode_reward)
+            print("Reward: ", reward, "Pos: ", reward_pos, "Rot: ", reward_rot)
+            print("Final State: ", self.state)
+            print("Target State:",self.target)
             self.episode_reward = 0.
             # # update history every 10 episodes
             # if (self.total_it % (self.max_steps * 10) == 0):
@@ -163,7 +186,7 @@ class TiagoEnv(gym.Env):
             #             self.history.add_point(point)
             #     # print(self.history._points)
             #     print("History updated")
-            self.total_it += self.it
+            self.total_episodes += 1
             self.it = -1
 
         return observation, reward, done, {}
@@ -182,24 +205,30 @@ class TiagoEnv(gym.Env):
         tf = self.robot.base_pose()
         self.robot.set_position_enforced(True)
         translation = tf.translation()
-        translation[0] = 2.5
+        translation[0] = 2.
+
         tf.set_translation(translation)
         self.robot.set_base_pose(tf)
-        self.state = self.robot.base_pose().translation()[0:2].reshape(1, 2)
-        self.robot.set_positions([np.pi], ['rootJoint_rot_z'])
+        self.state = self.get_state()
+
         self.robot.set_force_lower_limits(
             [-100., -100.], ['rootJoint_pos_x', 'rootJoint_pos_y'])
         self.robot.set_force_upper_limits(
             [100., 100, ], ['rootJoint_pos_x', 'rootJoint_pos_y'])
+        # self.robot.set_positions([0], ['rootJoint_rot_z'])
         # self.episode_history = np.array(self.state.copy())
-
+    def get_state(self):
+        state = np.zeros( 3)
+        state[0:2] = self.robot.base_pose().translation()[0:2]
+        state[2] = angle_wrap(self.robot.positions(['rootJoint_rot_z'])[0])
+        return state
     def render(self):
         if (self.enable_graphics):
             graphics = rd.gui.Graphics()
             self.simu.set_graphics(graphics)
             self.simu.scheduler().set_sync(False)
             graphics.look_at([-5, 3., 10.75], [0., 0., 0.])
-            # graphics.record_video("Tiago.mp4")
+            graphics.record_video("Tiago.mp4")
         # print(self.state)
 
 
@@ -287,20 +316,22 @@ class History:
             return a
 
 
-env = TiagoEnv(enable_graphics=True)
+env = TiagoEnv(enable_graphics=False)
 
-model = algo(SACDensePolicy, env, verbose=1, learning_rate=5e-4, train_freq=int(MAX_STEPS/2), gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
-# model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-3)#, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
-# model = algo.load("tiago_lab_wall_new_reward")
-model.learn(total_timesteps = 800 * 1000)
-model.save("tiago_lab_new_reward")
+model = algo(SACDensePolicy, env, verbose=1, learning_rate=linear_schedule(0.01))#, train_freq=int(MAX_STEPS/2), gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
+# model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-4)#, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
+# model = algo.load("reach_counter")
+# model.set_env(env)
+# model.learning_rate = 5e-4
+model.learn(total_timesteps = 800 * EPOCHS)
+model.save("reach_counter")
 
 
 obs = env.reset()
 for i in range(env.max_steps):
     action, _state = model.predict(obs, deterministic=True)
-    obs, reward, done, info = env.step(action.reshape(2,))
-    if i == 0:
-        env.render()
+    obs, reward, done, info = env.step(action.reshape(3,))
+    # if i == 0:
+        # env.render()
     if done:
         break
