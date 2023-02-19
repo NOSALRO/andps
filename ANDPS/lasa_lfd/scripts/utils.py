@@ -71,7 +71,56 @@ class net_first_order(nn.Module):
                 A, (self.x_tar-x).transpose(0, 1)).transpose(0, 1))
         return s_all
 
+class net_p_mat(nn.Module):
+    def __init__(self, ds_dim, N, target, mul_p, device='cpu'):
+        super(net_p_mat, self).__init__()
+        self.N = N
+        self.ds_dim = ds_dim
+        self.n_params = ds_dim
 
+        self.all_params_B_A = nn.ModuleList(
+            [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
+
+        for i in range(N):
+            geotorch.positive_semidefinite(self.all_params_B_A[i])
+
+        self.all_params_C_A = nn.ModuleList(
+            [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
+
+        for i in range(N):
+            geotorch.skew(self.all_params_C_A[i])
+
+        self.all_weights = nn.Sequential(
+            nn.Linear(self.ds_dim, 32), nn.ReLU(),nn.Linear(32, 16), nn.ReLU(),nn.Linear(16, 8), nn.ReLU(), nn.Linear(8, N), nn.Softmax(dim=1))
+            # Spyros
+        self.mul_p = mul_p
+        if mul_p:
+            self.all_params_P_A = nn.ModuleList([nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
+            for i in range(N):
+                geotorch.positive_semidefinite(self.all_params_P_A[i])
+        else:
+            self.all_params_P_A = nn.ModuleList([nn.Linear(self.n_params, self.n_params, bias=False)])
+            geotorch.positive_definite(self.all_params_P_A[0])
+
+        self.x_tar = torch.Tensor(target).view(-1, ds_dim).to(device)
+
+    def forward(self, x, disp=False):
+        batch_size = x.shape[0]
+        s_all = torch.zeros((1, self.ds_dim)).to(x.device)
+        # w_all = torch.zeros((batch_size, self.N))
+
+        w_all = self.all_weights(x)
+        #w_all = torch.nn.functional.softmax(w_all, dim=1)
+
+
+        for i in range(self.N):
+            if self.mul_p:
+                A = torch.mul(self.all_params_P_A[i].weight, (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight))
+            else:
+                A = torch.mul(self.all_params_P_A[0].weight, (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight))
+            # A = (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight)
+            s_all = s_all + torch.mul(w_all[:, i].view(batch_size, 1), torch.mm(A, (self.x_tar-x).transpose(0, 1)).transpose(0, 1))
+        return s_all
 class simple_nn(nn.Module):
     def __init__(self, dim):
         super(simple_nn, self).__init__()

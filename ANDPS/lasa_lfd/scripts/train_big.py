@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from utils import net_first_order as andps
+from utils import net_p_mat as andps
 from utils import simple_nn
 from utils import CustomDataset
 
@@ -21,65 +21,67 @@ num_DSs = [6, 3, 4, 6, 7, 6, 5, 5, 6, 6, 5, 6]
 N_trains = 35
 
 
-# experiment = 'andps'
-experiment = 'simple_nn'
+experiment = 'andps'
+# experiment = 'simple_nn'
 
-for i in range(len(names)):
-    name = names[i]
-    num_DS = num_DSs[i]
-    for k in range(N_trains):
-        data_lasa = np.load(os.path.join(dataset_folder, name + '_' + str(k) + '.npz'))
+mul_ps = [True, False]
+for option in mul_ps:
+    for i in range(len(names)):
+        name = names[i]
+        num_DS = num_DSs[i]
+        for k in range(N_trains):
+            data_lasa = np.load(os.path.join(dataset_folder, name + '_' + str(k) + '.npz'))
 
-        X_train = data_lasa['X_train']
-        Y_train = data_lasa['Y_train']
+            X_train = data_lasa['X_train']
+            Y_train = data_lasa['Y_train']
 
-        dim = X_train.shape[1]
+            dim = X_train.shape[1]
 
-        # end of dataset creation
-        target = X_train[-1]
-        if experiment == 'simple_nn':
-            model = simple_nn(dim)
-        else:
-            model = andps(dim, num_DS, target, device)
-        model.to(device)
+            # end of dataset creation
+            target = X_train[-1]
+            if experiment == 'simple_nn':
+                model = simple_nn(dim)
+            else:
+                model = andps(dim, num_DS, target, mul_p=option, device=device)
+            model.to(device)
 
-        batch_size = 64
-        batches_per_epoch = X_train.shape[0]//batch_size
-        epochs = 1000
-        le_r = 1e-3
-        optimizer = torch.optim.AdamW(model.parameters(), lr=le_r, weight_decay=0.1)
+            batch_size = 256
+            batches_per_epoch = X_train.shape[0]//batch_size
+            epochs = 1000
+            le_r = 1e-3
+            optimizer = torch.optim.AdamW(model.parameters(), lr=le_r, weight_decay=0.1)
 
-        dataset = CustomDataset(X_train.copy(), Y_train.copy())
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            dataset = CustomDataset(X_train.copy(), Y_train.copy())
+            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-        best_train_loss = np.inf
+            best_train_loss = np.inf
 
-        for epoch in range(epochs):  # loop over the dataset multiple times
-            running_loss = 0.0
-            for i, data in enumerate(dataloader, 0):
-                # get the inputs; data is a list of [inputs, output]
-                inputs, outputs = data
+            for epoch in range(epochs):  # loop over the dataset multiple times
+                running_loss = 0.0
+                for i, data in enumerate(dataloader, 0):
+                    # get the inputs; data is a list of [inputs, output]
+                    inputs, outputs = data
 
-                # print(inputs)
-                batch_loss = 0.0
+                    # print(inputs)
+                    batch_loss = 0.0
 
-                # zero the parameter gradients
-                optimizer.zero_grad()
+                    # zero the parameter gradients
+                    optimizer.zero_grad()
 
-                # forward + backward + optimize
-                output = model(inputs.to(device).view(-1, dim))
+                    # forward + backward + optimize
+                    output = model(inputs.to(device).view(-1, dim))
 
-                loss = torch.nn.functional.mse_loss(output, outputs.to(device).view(-1, dim), reduction='mean')
-                running_loss += loss.item()
-                loss.backward()
-                optimizer.step()
-            train_mean_loss = running_loss/batches_per_epoch
+                    loss = torch.nn.functional.mse_loss(output, outputs.to(device).view(-1, dim), reduction='mean')
+                    running_loss += loss.item()
+                    loss.backward()
+                    optimizer.step()
+                train_mean_loss = running_loss/batches_per_epoch
 
-            if train_mean_loss < best_train_loss:
-                best_train_loss = train_mean_loss
-                torch.save(model.state_dict(), 'models/'+experiment+'/lasa_' + name + '_' + str(k) + '_best.pt')
+                if train_mean_loss < best_train_loss:
+                    best_train_loss = train_mean_loss
+                    torch.save(model.state_dict(), 'models/'+experiment+ '/lasa_P_mat_mul_' +str(option) + '_'+ name + '_' + str(k) + '_best.pt')
 
-            print(experiment+" " + name + "(" + str(num_DS) + ", " + str(k) + ") -> Epoch: ", epoch+1, "Loss: ", train_mean_loss)
-        print('Finished Training')
+                print(experiment+" " + name + "(" + str(num_DS) + ", " + str(k) + ") -> Epoch: ", epoch+1, "Loss: ", train_mean_loss)
+            print('Finished Training')
 
-        torch.save(model.state_dict(), 'models/lasa_' + name + '_' + str(k) + '_' + str(epoch + 1) + '.pt')
+            torch.save(model.state_dict(), 'models/'+experiment+ '/lasa_P_mat_mul_' +str(option) + '_'+ name + '_'  + str(k) + '_' + str(epoch + 1) + '.pt')
