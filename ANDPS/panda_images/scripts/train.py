@@ -20,8 +20,8 @@ data = [data_angle, data_line]
 # create dataset with image indexing
 # images = []
 targets = []
-for i in range(1):
-
+for i in range(len(data)):
+    print(i)
     targets.append(data[i]["eef_x"][-1,:])
     if(i == 0):
         np_X = torch.Tensor(data[i]["np_X"])
@@ -33,12 +33,12 @@ for i in range(1):
 
 print(np_X.shape)
 
-assert np_X.shape[0]==1*720
+assert np_X.shape[0]==len(data)*720
 assert np_X.shape[1]==(3+64*64)
 
 target = np.zeros(3)
 for t in targets:
-    target+=t/2
+    target+=t/len(data)
 
 dataset = CustomDataset(np_X, np_Y)
 
@@ -51,12 +51,12 @@ print(dim)
 
 
 # Number of dynamical systems
-num_DS = 6
+num_DS = 3
 net = andps(dim, num_DS, target, 3,device)
 net.to(device)
 
 # Hyperparameters
-batch_size = 64
+batch_size = 128
 epochs = 200
 le_r = 1e-1
 

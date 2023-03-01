@@ -48,14 +48,14 @@ class CNN_lasa_image(nn.Module):
 
     def forward(self, state):
         # batch of images
-        img = torch.empty(size=(state.shape[0], 1, 64, 64)).to(state.device)
-        for i in range(state.shape[0]):
-                img[i] = state[i,3:].clone().detach().reshape(64,64)
-                # import matplotlib.pyplot as plt
-                # plt.imshow(img[i][0].cpu().numpy(),cmap='gray')
-                # plt.show()
+        # img = torch.empty(size=(state.shape[0], 1, 64, 64)).to(state.device)
+        # for i in range(state.shape[0]):
+        #         img[i] = state[i,3:].clone().detach().reshape(64,64)
+        #         # import matplotlib.pyplot as plt
+        #         # plt.imshow(img[i][0].cpu().numpy(),cmap='gray')
+        #         # plt.show()
 
-        x = self.pool1(F.relu(self.conv1(img)))
+        x = self.pool1(F.relu(self.conv1(state[:,3:].reshape(state.shape[0],1,64,64))))
         x = self.pool2(F.relu(self.conv2(x)))
         x = torch.flatten(x, 1)  # flatten all dimensions except batch
         # print(x.shape)
@@ -94,7 +94,7 @@ class andps_images(nn.Module):
         batch_size = x.shape[0]
         s_all = torch.zeros((1, self.ds_dim)).to(x.device)
         w_all = self.all_weights(x)
-
+        print(np.mean(w_all.detach().cpu().numpy(),axis=0))
         for i in range(self.N):
             A = self.all_params_B_A[i].weight + self.all_params_C_A[i].weight
 

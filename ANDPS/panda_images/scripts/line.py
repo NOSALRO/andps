@@ -147,5 +147,5 @@ np_X = np.concatenate([eef_x,images_flat[1:,:]],axis = 1)
 # ax = fig.add_subplot(projection='3d')
 # ax.scatter(eef_x[:,0], eef_x[:,1], eef_x[:,2])
 # plt.show()
-np.savez('data/angle.npz', eef_x =eef_x, eef_vx=eef_vx, images = images[:,:,1:], np_X =np_X)
+np.savez('data/line.npz', eef_x =eef_x, eef_vx=eef_vx, images = images[:,:,1:], np_X =np_X)
 
