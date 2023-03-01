@@ -87,8 +87,8 @@ class andps_images(nn.Module):
         for i in range(N):
             geotorch.skew(self.all_params_C_A[i])
         self.x_tar = torch.Tensor(target).view(-1, ds_dim).to(device)
-        self.all_params_P_A = nn.ModuleList([nn.Linear(self.n_params, self.n_params, bias=False)])
-        geotorch.positive_definite(self.all_params_P_A[0])
+
+
 
     def forward(self, x):
         batch_size = x.shape[0]
@@ -96,7 +96,7 @@ class andps_images(nn.Module):
         w_all = self.all_weights(x)
 
         for i in range(self.N):
-            A = torch.mul(self.all_params_P_A[0].weight, (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight))
+            A = self.all_params_B_A[i].weight + self.all_params_C_A[i].weight
 
             s_all = s_all + torch.mul(w_all[:, i].view(batch_size, 1), torch.mm(A, (self.x_tar-x[:, :3]).transpose(0, 1)).transpose(0, 1))
         return s_all
