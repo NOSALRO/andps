@@ -33,7 +33,7 @@ class CustomDataset(Dataset):
 
 
 class CNN_lasa_image(nn.Module):
-    def __init__(self, classes, dim, N):
+    def __init__(self, dim, N):
         super().__init__()
 
         self.conv1 = nn.Conv2d(1, 5, kernel_size=(5, 5))
@@ -55,27 +55,27 @@ class CNN_lasa_image(nn.Module):
         #         # plt.imshow(img[i][0].cpu().numpy(),cmap='gray')
         #         # plt.show()
 
-        x = self.pool1(F.relu(self.conv1(state[:,3:].view(state.shape[0],1,64,64))))
+        x = self.pool1(F.relu(self.conv1(state[:,3:].reshape(state.shape[0],1,64,64))))
         x = self.pool2(F.relu(self.conv2(x)))
         x = torch.flatten(x, 1)  # flatten all dimensions except batch
         # print(x.shape)
         # print(x)
         x = torch.cat((x, state[:, :3]), dim=1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
+        x = F.leaky_relu(self.fc1(x))
+        x = F.leaky_relu(self.fc2(x))
+        x = F.leaky_relu(self.fc3(x))
+        x = F.leaky_relu(self.fc4(x))
         x = F.softmax(self.fc5(x), dim=1)
         return x
 
 
 class andps_images(nn.Module):
-    def __init__(self, ds_dim, N, target, classes,  device='cpu'):
+    def __init__(self, ds_dim, N, target, device='cpu'):
         super().__init__()
         self.N = N
         self.ds_dim = ds_dim
         self.n_params = ds_dim
-        self.all_weights = CNN_lasa_image(classes, self.ds_dim, N).to(device)
+        self.all_weights = CNN_lasa_image(self.ds_dim, N).to(device)
         self.all_params_B_A = nn.ModuleList([nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
         # self.images = images
         for i in range(N):
@@ -94,7 +94,7 @@ class andps_images(nn.Module):
         batch_size = x.shape[0]
         s_all = torch.zeros((1, self.ds_dim)).to(x.device)
         w_all = self.all_weights(x)
-        print(np.mean(w_all.detach().cpu().numpy(),axis=0))
+        print(w_all)
         for i in range(self.N):
             A = self.all_params_B_A[i].weight + self.all_params_C_A[i].weight
 

@@ -46,13 +46,13 @@ dim = np_Y.shape[1]
 
 # Number of dynamical systems
 num_DS = 3
-net = andps(dim, num_DS, target, 3,device)
+net = andps(dim, num_DS, target, device)
 net.to(device)
 
 # Hyperparameters
 batch_size = 128
 epochs = 200
-le_r = 1e-1
+le_r = 5e-4
 
 
 # Load dataset
@@ -61,8 +61,8 @@ dataset = CustomDataset(np_X, np_Y)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 batches_per_epoch = np_X.shape[0]//batch_size
-optimizer = torch.optim.AdamW(net.parameters(), lr=le_r)
-scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+optimizer = torch.optim.AdamW(net.parameters(), lr=le_r, weight_decay=0.01)
+# scheduler = StepLR(optimizer, step_size=50, gamma=0.5)
 def weights_init(m):
     if isinstance(m, nn.Conv2d):
         torch.nn.init.xavier_uniform_(m.weight.data)
@@ -85,9 +85,9 @@ for epoch in range(epochs):  # loop over the dataset multiple times
         running_loss += loss.item()
         loss.backward()
         optimizer.step()
+    # scheduler.step()
     train_mean_loss = running_loss/batches_per_epoch
-    scheduler.step()
-    print("Epoch: ", epoch+1, "Loss: ", train_mean_loss, "Lr: ", scheduler.get_lr()[0])
+    print("Epoch: ", epoch+1, "Loss: ", train_mean_loss)#, "Lr: ", scheduler.get_lr()[0])
     if ((epoch + 1) % 10 == 0):
         torch.save(net.state_dict(),'models/panda_image_' + str(epoch + 1) + '.pt')
 print('Finished Training')
