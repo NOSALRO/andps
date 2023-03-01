@@ -21,7 +21,6 @@ data = [data_angle, data_line]
 # images = []
 targets = []
 for i in range(len(data)):
-    print(i)
     targets.append(data[i]["eef_x"][-1,:])
     if(i == 0):
         np_X = torch.Tensor(data[i]["np_X"])
@@ -31,7 +30,6 @@ for i in range(len(data)):
         np_X = torch.cat((np_X, cur_np_X), 0)
         np_Y = torch.cat((np_Y, torch.Tensor(data[i]["eef_vx"])), 0)
 
-print(np_X.shape)
 
 assert np_X.shape[0]==len(data)*720
 assert np_X.shape[1]==(3+64*64)
@@ -42,13 +40,9 @@ for t in targets:
 
 dataset = CustomDataset(np_X, np_Y)
 
-# Dataset now is in the form X = [[posX, posY, image_id],...]  Y = [[velX, velY]] (tensors)
-# ds Matrix dimension
+
+
 dim = np_Y.shape[1]
-print(dim)
-# print(np_X)
-
-
 
 # Number of dynamical systems
 num_DS = 3
