@@ -13,9 +13,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # read dataset
 data_angle = np.load("data/angle.npz")
 data_line = np.load("data/line.npz")
-data_spiral = np.load("data/spiral.npz")
+data_sine = np.load("data/sine.npz")
 
-data = [data_angle, data_line]
+data = [data_angle, data_line, data_sine]
 
 # create dataset with image indexing
 # images = []
@@ -45,7 +45,7 @@ dataset = CustomDataset(np_X, np_Y)
 dim = np_Y.shape[1]
 
 # Number of dynamical systems
-num_DS = 3
+num_DS = 8
 net = andps(dim, num_DS, target, device)
 net.to(device)
 

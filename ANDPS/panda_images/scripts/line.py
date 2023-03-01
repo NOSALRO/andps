@@ -22,8 +22,7 @@ def image_as_grayscale_array(rd_image):
     image = np.array(rd.gui.convert_rgb_to_grayscale(rd_image).data).reshape(rd_image.width, rd_image.height)
     return image
 
-target = [0.40050368, 0.4042623,  0.52949236]
-
+target = [ 5.54499532e-01, 0.404,  5.21498266e-01]
 # RobotDART Simulation
 dt = 0.001
 control_freq = 100
@@ -50,6 +49,8 @@ box_tf.set_translation([3.5, 0., 1.])
 line_box.set_base_pose(box_tf)
 simu.add_robot(line_box)
 
+print(get_eef_state(robot))
+input()
 # graphics
 gconfig = rd.gui.Graphics.default_configuration()
 gconfig.width = 480

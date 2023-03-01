@@ -22,7 +22,7 @@ def image_as_grayscale_array(rd_image):
     image = np.array(rd.gui.convert_rgb_to_grayscale(rd_image).data).reshape(rd_image.width, rd_image.height)
     return image
 
-target = [0.40050368, 0.4042623,  0.52949236]
+target = [ 5.54499532e-01, 0.404,  5.21498266e-01]
 
 # RobotDART Simulation
 dt = 0.001
@@ -116,7 +116,7 @@ while(continue_simu):
         vel_rot = controller.update(eef_tf)[0][:3]
         vel_xyz = np.zeros_like(vel_rot)
         vel_xyz[0] =  2* (target[0] - robot.body_pose(eef_link_name).translation()[0])
-        vel_xyz[1] = 0.1
+        vel_xyz[1] = 1/2* (target[1] - robot.body_pose(eef_link_name).translation()[1])
         vel_xyz[2] =  0.1 * np.cos( 1/6* np.pi * t)
 
         vel = np.concatenate((vel_rot, vel_xyz))

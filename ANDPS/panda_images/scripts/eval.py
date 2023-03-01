@@ -121,9 +121,10 @@ leave_trace = 0
 continue_simu = True
 
 
-# Number of dynamical systems
-num_DS = 6
-net = andps(3, num_DS, target, 3,device)
+# Number o
+# f dynamical systems
+num_DS = 8
+net = andps(3, num_DS, target, device)
 net.to(device)
 net.load_state_dict(torch.load("models/panda_image_200.pt"))
 net.eval()

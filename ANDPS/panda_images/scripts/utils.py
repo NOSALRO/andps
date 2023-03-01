@@ -44,28 +44,34 @@ class CNN_lasa_image(nn.Module):
         self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 128)
         self.fc4 = nn.Linear(128, 64)
-        self.fc5 = nn.Linear(64, N)
+        self.fc5 = nn.Linear(64, 3)
+        self.fc6 = nn.Linear(64,N)
 
     def forward(self, state):
         # batch of images
         # img = torch.empty(size=(state.shape[0], 1, 64, 64)).to(state.device)
         # for i in range(state.shape[0]):
         #         img[i] = state[i,3:].clone().detach().reshape(64,64)
-        #         # import matplotlib.pyplot as plt
-        #         # plt.imshow(img[i][0].cpu().numpy(),cmap='gray')
-        #         # plt.show()
-
+        import matplotlib.pyplot as plt
+        # plt.imshow(img[i][0].cpu().numpy(),cmap='gray')
+        # plt.show()
+        # for img in state[:,3:].reshape(state.shape[0],1,64,64):
+        #     plt.imshow(img[0].cpu(),cmap='gray')
+        #     plt.show()
         x = self.pool1(F.relu(self.conv1(state[:,3:].reshape(state.shape[0],1,64,64))))
         x = self.pool2(F.relu(self.conv2(x)))
         x = torch.flatten(x, 1)  # flatten all dimensions except batch
         # print(x.shape)
         # print(x)
         x = torch.cat((x, state[:, :3]), dim=1)
-        x = F.leaky_relu(self.fc1(x))
-        x = F.leaky_relu(self.fc2(x))
-        x = F.leaky_relu(self.fc3(x))
-        x = F.leaky_relu(self.fc4(x))
-        x = F.softmax(self.fc5(x), dim=1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        # x = F.softmax(self.fc5(x))
+        # print(x)
+        x = F.softmax(self.fc6(x), dim=1)
+        # print(x)
         return x
 
 
@@ -94,7 +100,7 @@ class andps_images(nn.Module):
         batch_size = x.shape[0]
         s_all = torch.zeros((1, self.ds_dim)).to(x.device)
         w_all = self.all_weights(x)
-        print(w_all)
+        # print(w_all)
         for i in range(self.N):
             A = self.all_params_B_A[i].weight + self.all_params_C_A[i].weight
 
