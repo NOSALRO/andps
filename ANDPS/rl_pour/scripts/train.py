@@ -10,7 +10,7 @@ import scipy.stats
 from typing import Callable
 
 
-class TiagoEnv(gym.Env):
+class PourEnv(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
@@ -36,7 +36,7 @@ class TiagoEnv(gym.Env):
             self.simu.set_graphics(graphics)
             self.simu.scheduler().set_sync(False)
             graphics.look_at([0, 0., 10.75], [0., 0., 10.])
-            graphics.record_video("Tiago.mp4")
+            graphics.record_video("Pour.mp4")
         # print(self.state)
 
     def setup_simu(self, dt):
@@ -142,6 +142,6 @@ class TiagoEnv(gym.Env):
         yield
 
 
-env = TiagoEnv()
+env = PourEnv()
 for _ in range(3000):
     env.step()
