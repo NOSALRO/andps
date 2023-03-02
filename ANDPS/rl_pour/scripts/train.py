@@ -25,19 +25,14 @@ class PourEnv(gym.Env):
         observation = 0
         reward = 0
         done = False
+        self.robot.set_commands([-2],["panda_joint7"])
         return observation, reward, done, {}
 
     def get_state(self):
         return self.robot.body_pose(self.eef_link_name).translation()
 
     def render(self):
-        if (self.enable_graphics):
-            graphics = rd.gui.Graphics()
-            self.simu.set_graphics(graphics)
-            self.simu.scheduler().set_sync(False)
-            graphics.look_at([0, 0., 10.75], [0., 0., 10.])
-            graphics.record_video("Pour.mp4")
-        # print(self.state)
+        print(self.get_state())
 
     def setup_simu(self, dt):
         self.dt = dt
@@ -98,7 +93,7 @@ class PourEnv(gym.Env):
         self.reset_cereal_box()
 
     def reset_cereal_box(self):
-        tf = self.cereal_box.base_pose()
+        tf = dartpy.math.Isometry3()
         tf.set_translation(self.robot.body_pose(
             self.eef_link_name).translation() + [0.0, 0.065, 0.05])
         self.cereal_box.set_base_pose(tf)
@@ -107,24 +102,32 @@ class PourEnv(gym.Env):
         bowl_packages = [("bowl", "urdfs/bowl")]
         self.bowl = rd.Robot("urdfs/bowl/bowl.urdf",  bowl_packages, "bowl")
         self.bowl.set_color_mode("material")
+        self.simu.add_robot(self.bowl)
         self.reset_bowl()
 
     def reset_bowl(self):
         tf = self.bowl.base_pose()
-        tf.set_translation(self.table.base_pose().translation() + [0, 0, 0.78])
+        tf.set_translation(self.get_state() + [0, 0, -0.5])
         self.bowl.set_base_pose(tf)
-        self.simu.add_robot(self.bowl)
+
 
     def add_cereal(self, count=5):
         self.cereal_arr = []
         box_tf = self.cereal_box.base_pose()
-        cereal_dims = [0.03, 0.03, 0.03]
+        cereal_dims = [0.02, 0.02, 0.02]
         cereal_mass = 0.001
         cereal_color = [0.96, 0.82, 0.24, 1.]
         for i in range(count):
             cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] - 0.05 + (i % 2) / 10, box_tf.translation()[2]-0.01 + i/100 + 0.018]
-            self.cereal_arr.append(self.simu.add_robot(rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))))
+            cereal = rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
+            self.cereal_arr.append(cereal)
+            self.simu.add_robot(cereal)
 
+    def reset_cereal(self):
+        box_tf = self.cereal_box.base_pose()
+        for i in range(len(self.cereal_arr)):
+            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] - 0.05 + (i % 2) / 10, box_tf.translation()[2]-0.01 + i/100 + 0.018]
+            self.cereal_arr[i].set_base_pose(cereal_pose)
     def setup_env(self):
         print("Initializing Rd Environment")
         self.setup_table()
@@ -139,9 +142,16 @@ class PourEnv(gym.Env):
         print("Added bowl")
 
     def reset(self):
-        yield
+        self.reset_robot()
+        self.reset_cereal_box()
+        self.reset_cereal()
+        self.reset_bowl()
+        print("Env reset successfully")
 
 
 env = PourEnv()
-for _ in range(3000):
-    env.step()
+for _ in range(2):
+    for _ in range(1000):
+        env.step()
+
+    env.reset()
