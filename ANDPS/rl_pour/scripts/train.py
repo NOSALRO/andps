@@ -27,7 +27,7 @@ def EREulerXYZ(eulerXYZ):
     R[2, 2] = cos_x * cos_y
 
     return R
-MAX_STEPS = 1600
+MAX_STEPS = 300
 EPOCHS = 1000
 class PourEnv(gym.Env):
     """Custom Environment that follows gym interface"""
@@ -194,6 +194,7 @@ class PourEnv(gym.Env):
         self.reset_cereal()
         self.reset_bowl()
         print("Env reset successfully")
+        return self.get_state()
 
     def calc_reward(self):
         # reward is the sum of distances of every "cereal" to the bowl
@@ -217,11 +218,12 @@ model.learn(total_timesteps = 800 * EPOCHS)
 model.save("cereal_killer")
 
 
-obs = env.reset()
-for i in range(env.max_steps):
-    action, _state = model.predict(obs, deterministic=True)
-    obs, reward, done, info = env.step(action.reshape(6,))
-    # if i == 0:
-        # env.render()
-    if done:
-        break
+# obs = env.reset()
+# for i in range(env.max_steps):
+#     action, _state = model.predict(obs, deterministic=True)
+#     print(action, _state)
+#     obs, reward, done, info = env.step(action.reshape(6,))
+#     # if i == 0:
+#         # env.render()
+#     if done:
+#         break
