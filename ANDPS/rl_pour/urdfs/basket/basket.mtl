@@ -1,0 +1,12 @@
+# Blender MTL File: 'basket.blend'
+# Material Count: 1
+
+newmtl cgaxis_models_52_26_01
+Ns 10.000002
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.031373 0.427451
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1

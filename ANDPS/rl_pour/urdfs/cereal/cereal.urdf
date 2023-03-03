@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot name="cereal">
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.03"/>
+            <inertia ixx="0.000425"  ixy="0"  ixz="0" iyy="0.0005" iyz="0" izz="0.000125" />
+        </inertial>
+
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="cereal.dae" scale="0.07 0.1 0.1" />
+            </geometry>
+        </visual>
+
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="cereal.dae" scale="0.07 0.1 0.1" />
+            </geometry>
+        </collision>
+    </link>
+</robot>
