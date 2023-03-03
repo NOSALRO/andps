@@ -63,7 +63,14 @@ class PourEnv(gym.Env):
         self.simu.step_world()
 
         observation = self.get_state()
+        reward = self.calc_reward()
 
+        if(self.it == self.max_steps):
+            done = True
+            self.it = -1
+
+
+        self.it += 1
         return observation, reward, done, {}
 
     def get_state(self):
@@ -188,6 +195,13 @@ class PourEnv(gym.Env):
         self.reset_bowl()
         print("Env reset successfully")
 
+    def calc_reward(self):
+        # reward is the sum of distances of every "cereal" to the bowl
+        reward = 0
+        for cereal in (self.cereal_arr):
+            reward = np.linalg.norm(self.bowl.base_pose().translation() - cereal.base_pose().translation())
+
+        return -reward * reward
 
 env = PourEnv()
 
@@ -206,7 +220,7 @@ model.save("cereal_killer")
 obs = env.reset()
 for i in range(env.max_steps):
     action, _state = model.predict(obs, deterministic=True)
-    obs, reward, done, info = env.step(action.reshape(3,))
+    obs, reward, done, info = env.step(action.reshape(6,))
     # if i == 0:
         # env.render()
     if done:
