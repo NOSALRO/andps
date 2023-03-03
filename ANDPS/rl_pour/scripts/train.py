@@ -154,7 +154,7 @@ class PourEnv(gym.Env):
 
     def reset_bowl(self):
         tf = self.bowl.base_pose()
-        tf.set_translation(self.get_state()[:3] + [0, 0, -0.5])
+        tf.set_translation(self.get_state()[:3] + [0, 0, -0.65])
         self.bowl.set_base_pose(tf)
 
     def add_cereal(self, count=5):
@@ -200,7 +200,7 @@ class PourEnv(gym.Env):
         # reward is the sum of distances of every "cereal" to the bowl
         reward = 0
         for cereal in (self.cereal_arr):
-            reward = np.linalg.norm(self.bowl.base_pose().translation() - cereal.base_pose().translation())
+            reward += np.linalg.norm(self.bowl.base_pose().translation() - cereal.base_pose().translation())
 
         return -reward * reward
 
