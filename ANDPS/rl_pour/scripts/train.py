@@ -3,13 +3,32 @@ import dartpy
 from stable_baselines3 import SAC as algo
 from stable_baselines3.common.noise import NormalActionNoise
 from utils_sb3 import SACDensePolicy
+from utils import damped_pseudoinverse
 import numpy as np
 import RobotDART as rd
 import matplotlib.pyplot as plt
 import scipy.stats
 from typing import Callable
+def EREulerXYZ(eulerXYZ):
+    x = eulerXYZ[0]
+    y = eulerXYZ[1]
+    # z = eulerXYZ[2]
+    sin_x = np.sin(x)
+    cos_x = np.cos(x)
+    sin_y = np.sin(y)
+    cos_y = np.cos(y)
 
+    R = np.zeros((3, 3))
+    R[0, 0] = 1.
+    R[0, 2] = sin_y
+    R[1, 1] = cos_x
+    R[1, 2] = -cos_y * sin_x
+    R[2, 1] = sin_x
+    R[2, 2] = cos_x * cos_y
 
+    return R
+MAX_STEPS = 1600
+EPOCHS = 1000
 class PourEnv(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
@@ -20,16 +39,37 @@ class PourEnv(gym.Env):
             self.setup_graphics(enable_record)
         self.setup_env()
 
-    def step(self):
+        # cartesianVel, eulerXYZ
+        # self.state = np.array([[0.,0.,0.,0.,0.,0.]])
+        self.seed = seed
+        self.it = 0
+        self.max_steps = MAX_STEPS
+
+        # define action space
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(6,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=np.array([-2., -2., -2., -np.pi, -np.pi/2, -np.pi]), high=np.array([-2., -2., -2., -np.pi, -np.pi/2, -np.pi]), shape=(6,), dtype=np.float32)
+
+    def step(self, action):
         self.simu.step_world()
         observation = 0
         reward = 0
         done = False
-        self.robot.set_commands([-2],["panda_joint7"])
+
+        vel_rot = EREulerXYZ(self.get_state()[:3]) @ action[3:]
+
+        jac_pinv = damped_pseudoinverse(self.robot.jacobian(self.eef_link_name))
+        cmd = jac_pinv @ np.append(vel_rot,action[:3])
+        self.robot.set_commands(cmd)
+        self.simu.step_world()
+
+        observation = self.get_state()
+
         return observation, reward, done, {}
 
     def get_state(self):
-        return self.robot.body_pose(self.eef_link_name).translation()
+        poseXYZ = self.robot.body_pose(self.eef_link_name).translation()
+        eulerXYZ = dartpy.math.matrixToEulerXYZ(self.robot.body_pose(self.eef_link_name).matrix()[:3, :3])
+        return np.append(poseXYZ,eulerXYZ)
 
     def render(self):
         print(self.get_state())
@@ -107,9 +147,8 @@ class PourEnv(gym.Env):
 
     def reset_bowl(self):
         tf = self.bowl.base_pose()
-        tf.set_translation(self.get_state() + [0, 0, -0.5])
+        tf.set_translation(self.get_state()[:3] + [0, 0, -0.5])
         self.bowl.set_base_pose(tf)
-
 
     def add_cereal(self, count=5):
         self.cereal_arr = []
@@ -128,6 +167,7 @@ class PourEnv(gym.Env):
         for i in range(len(self.cereal_arr)):
             cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] - 0.05 + (i % 2) / 10, box_tf.translation()[2]-0.01 + i/100 + 0.018]
             self.cereal_arr[i].set_base_pose(cereal_pose)
+
     def setup_env(self):
         print("Initializing Rd Environment")
         self.setup_table()
@@ -150,8 +190,24 @@ class PourEnv(gym.Env):
 
 
 env = PourEnv()
-for _ in range(2):
-    for _ in range(1000):
-        env.step()
 
-    env.reset()
+
+
+
+model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)#, train_freq=int(MAX_STEPS/2), gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
+# model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-4)#, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
+# model = algo.load("reach_counter")
+# model.set_env(env)
+# model.learning_rate = 5e-4
+model.learn(total_timesteps = 800 * EPOCHS)
+model.save("cereal_killer")
+
+
+obs = env.reset()
+for i in range(env.max_steps):
+    action, _state = model.predict(obs, deterministic=True)
+    obs, reward, done, info = env.step(action.reshape(3,))
+    # if i == 0:
+        # env.render()
+    if done:
+        break
