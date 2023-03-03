@@ -47,7 +47,7 @@ class PourEnv(gym.Env):
 
         # define action space
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(6,), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=np.array([-2., -2., -2., -np.pi, -np.pi/2, -np.pi]), high=np.array([-2., -2., -2., -np.pi, -np.pi/2, -np.pi]), shape=(6,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=np.array([-2., -2., -2., -np.pi, -np.pi/2, -np.pi]), high=np.array([2., 2., 2., np.pi, np.pi/2, np.pi]), shape=(6,), dtype=np.float32)
 
     def step(self, action):
         self.simu.step_world()
