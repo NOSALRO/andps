@@ -17,7 +17,7 @@
         <collision>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="table_3.dae" scale="1 1 1" />
+                <mesh filename="table.stl" scale="1 1 1" />
             </geometry>
         </collision>
     </link>

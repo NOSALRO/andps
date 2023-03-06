@@ -305,19 +305,19 @@
         <visual>
             <origin xyz="0 -0.01 0" rpy="1.57 0 -1.57" />
             <geometry>
-                <mesh filename="package://franka_description/meshes/visual/cereal.dae" scale="0.05 0.05 0.05" />
+                <mesh filename="package://franka_description/meshes/visual/cereal.dae" scale="0.8 0.8 0.8" />
             </geometry>
         </visual>
 
         <collision>
             <origin xyz="0 0 0" rpy="1.57 0 -1.57"/>
             <geometry>
-                <mesh filename="package://franka_description/meshes/collision/cereal.stl" scale="0.05 0.05 0.05" />
+                <mesh filename="package://franka_description/meshes/collision/cereal.stl" scale="0.8 0.8 0.8" />
             </geometry>
         </collision>
     </link>
-     <!-- Joint from hand to left finger -->
-     <joint name="cereal_joint" type="fixed">
+    <!-- Joint from hand to left finger -->
+    <joint name="cereal_joint" type="fixed">
         <parent link="panda_leftfinger" />
         <child link="cereal_box" />
         <origin rpy="0 0 0" xyz="0 0 0.0584" />

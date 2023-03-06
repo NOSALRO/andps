@@ -67,7 +67,7 @@ class PourEnv(gym.Env):
         observation = self.get_state()
         reward = self.calc_reward()
 
-        if (self.it == self.max_steps) or any(self.get_state()[:3] > self.high_bounds) or any(self.get_state()[:3]<self.low_bounds):
+        if (self.it == self.max_steps):
             done = True
             self.it = -1
 
@@ -87,7 +87,7 @@ class PourEnv(gym.Env):
         self.dt = dt
         # init simu
         self.simu = rd.RobotDARTSimu(self.dt)
-        self.simu.set_collision_detector("fcl")
+        self.simu.set_collision_detector("ode")
         # add checkerboard floor
         self.simu.add_checkerboard_floor()
 
@@ -131,8 +131,8 @@ class PourEnv(gym.Env):
         positions[4] = np.pi / 2.0
         positions[5] = np.pi / 2.0
         positions[6] = 3*np.pi/4
-        positions[7] = 0.022
-        positions[8] = 0.022
+        positions[7] = 0.015
+        positions[8] = 0.015
         self.robot.set_positions(positions)
 
     # def setup_cereal_box(self):
@@ -167,12 +167,12 @@ class PourEnv(gym.Env):
         box_tf = self.robot.body_pose("cerela_box")
         self.cereal_arr = []
 
-        cereal_dims = [0.01, 0.01, 0.01]
+        cereal_dims = [0.04, 0.04, 0.04]
         cereal_mass = 0.1
         cereal_color = [1, 0., 0., 1.]
 
         for i in range(count):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] , box_tf.translation()[2] -0.02 +  i * 0.01]
+            cereal_pose = [0., 0., 0., box_tf.translation()[0] -0.1 +  i * 0.1, box_tf.translation()[1]-0.1 +  i * 0.15, box_tf.translation()[2] +0.15]
             cereal = rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
             self.cereal_arr.append(cereal)
             self.simu.add_robot(cereal)
@@ -182,7 +182,7 @@ class PourEnv(gym.Env):
     def reset_cereal(self):
         box_tf = self.robot.body_pose("cereal_box")
         for i in range(len(self.cereal_arr)):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] , box_tf.translation()[2] -0.02  + i * 0.01]
+            cereal_pose = [0., 0., 0., box_tf.translation()[0] -0.1 +  i * 0.1, box_tf.translation()[1]-0.1 +  i * 0.1, box_tf.translation()[2] +0.1]
             self.cereal_arr[i].set_base_pose(cereal_pose)
 
     def setup_env(self):
@@ -214,26 +214,26 @@ class PourEnv(gym.Env):
 
         return -reward * reward
 
-env = PourEnv(enable_graphics=False, enable_record=False)
+env = PourEnv(enable_graphics=True, enable_record=True)
 
 
 
 
 model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)#, train_freq=int(MAX_STEPS/2), gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
 # model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-4)#, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
-# model = algo.load("reach_counter")
+# model = algo.load("cereal_killer")
 # model.set_env(env)
 # model.learning_rate = 5e-4
 model.learn(total_timesteps = 800 * EPOCHS)
-model.save("cereal_killer")
+# model.save("cereal_killer")
 
 
-# obs = env.reset()
-# for i in range(env.max_steps):
-#     action, _state = model.predict(obs, deterministic=True)
-#     print(action, _state)
-#     obs, reward, done, info = env.step(action.reshape(6,))
-#     # if i == 0:
-#         # env.render()
-#     if done:
-#         break
+obs = env.reset()
+for i in range(env.max_steps):
+    action, _state = model.predict(obs, deterministic=True)
+    print(action, _state)
+    obs, reward, done, info = env.step(action.reshape(6,))
+    # if i == 0:
+        # env.render()
+    if done:
+        break
