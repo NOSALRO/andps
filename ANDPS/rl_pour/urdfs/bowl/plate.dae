@@ -5,36 +5,13 @@
       <author>Blender User</author>
       <authoring_tool>Blender 3.3.0 commit date:2022-09-06, commit time:15:39, hash:0759f671ce1f</authoring_tool>
     </contributor>
-    <created>2023-03-06T12:51:49</created>
-    <modified>2023-03-06T12:51:49</modified>
+    <created>2023-03-06T12:48:37</created>
+    <modified>2023-03-06T12:48:37</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
-  <library_effects>
-    <effect id="Material_003-effect">
-      <profile_COMMON>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <color sid="diffuse">0.8 0.8 0.8 1</color>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
-  </library_effects>
+  <library_effects/>
   <library_images/>
-  <library_materials>
-    <material id="Material_003-material" name="Material.003">
-      <instance_effect url="#Material_003-effect"/>
-    </material>
-  </library_materials>
   <library_geometries>
     <geometry id="Cylinder-mesh" name="Cylinder">
       <mesh>
@@ -70,7 +47,7 @@
         <vertices id="Cylinder-mesh-vertices">
           <input semantic="POSITION" source="#Cylinder-mesh-positions"/>
         </vertices>
-        <triangles material="Material_003-material" count="252">
+        <triangles count="252">
           <input semantic="VERTEX" source="#Cylinder-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Cylinder-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Cylinder-mesh-map-0" offset="2" set="0"/>
@@ -83,15 +60,7 @@
     <visual_scene id="Scene" name="Scene">
       <node id="Cylinder" name="Cylinder" type="NODE">
         <matrix sid="transform">1.469316 0 0 0 0 1.469316 0 0 0 0 0.23479 0 0 0 0 1</matrix>
-        <instance_geometry url="#Cylinder-mesh" name="Cylinder">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="Material_003-material" target="#Material_003-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
+        <instance_geometry url="#Cylinder-mesh" name="Cylinder"/>
       </node>
     </visual_scene>
   </library_visual_scenes>

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<robot name="cereal">
+    <link name="base_link">
+        <inertial>
+
+        </inertial>
+    </link>
+</robot>

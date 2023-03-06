@@ -47,7 +47,9 @@ class PourEnv(gym.Env):
 
         # define action space
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(6,), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=np.array([-2., -2., -2., -np.pi, -np.pi/2, -np.pi]), high=np.array([2., 2., 2., np.pi, np.pi/2, np.pi]), shape=(6,), dtype=np.float32)
+        self.low_bounds = [self.robot.body_pose("panda_ee").translation()[0]-1, self.robot.body_pose("panda_ee").translation()[1]-1, self.robot.body_pose("panda_ee").translation()[2]-0.3]
+        self.high_bounds = [self.robot.body_pose("panda_ee").translation()[0]+1, self.robot.body_pose("panda_ee").translation()[1]+1, self.robot.body_pose("panda_ee").translation()[2]+0.3]
+        self.observation_space = gym.spaces.Box(low=np.array([self.low_bounds[0], self.low_bounds[1], self.low_bounds[2], -np.pi, -np.pi/2, -np.pi]), high=np.array([self.high_bounds[0], self.high_bounds[1], self.high_bounds[2], np.pi, np.pi/2, np.pi]), shape=(6,), dtype=np.float32)
 
     def step(self, action):
         self.simu.step_world()
@@ -65,7 +67,7 @@ class PourEnv(gym.Env):
         observation = self.get_state()
         reward = self.calc_reward()
 
-        if(self.it == self.max_steps):
+        if (self.it == self.max_steps) or any(self.get_state()[:3] > self.high_bounds) or any(self.get_state()[:3]<self.low_bounds):
             done = True
             self.it = -1
 
@@ -95,7 +97,7 @@ class PourEnv(gym.Env):
         self.gconfig.height = 480
         self.graphics = rd.gui.Graphics(self.gconfig)
         self.simu.set_graphics(self.graphics)
-        self.graphics.look_at((1.5, 1.5, 4.), (0.0, 0.0, 0.5))
+        self.graphics.look_at((1.5, 1.5, 2.), (0.0, 0.0, 0.5))
         if (enable_record):
             self.graphics.camera().record(True)
             self.graphics.record_video(
@@ -110,7 +112,9 @@ class PourEnv(gym.Env):
         self.simu.add_robot(self.table)
 
     def setup_robot(self):
-        self.robot = rd.Franka()
+        franka_packages = [("franka_description", "urdfs/franka/franka_description")]
+        self.robot = rd.Robot("urdfs/franka/franka.urdf",  franka_packages,"franka")
+        self.robot.set_color_mode("material")
         self.simu.add_robot(self.robot)
         self.eef_link_name = "panda_ee"
         tf = self.robot.base_pose()
@@ -131,19 +135,19 @@ class PourEnv(gym.Env):
         positions[8] = 0.022
         self.robot.set_positions(positions)
 
-    def setup_cereal_box(self):
-        cereal_packages = [("cereal", "urdfs/cereal")]
-        self.cereal_box = rd.Robot(
-            "urdfs/cereal/cereal.urdf",  cereal_packages, "cereal_box")
-        self.cereal_box.set_color_mode("material")
-        self.simu.add_robot(self.cereal_box)
-        self.reset_cereal_box()
+    # def setup_cereal_box(self):
+    #     cereal_packages = [("cereal", "urdfs/cereal")]
+    #     self.cereal_box = rd.Robot(
+    #         "urdfs/cereal/cereal.urdf",  cereal_packages, "cereal_box")
+    #     self.cereal_box.set_color_mode("material")
+    #     self.simu.add_robot(self.cereal_box)
+    #     self.reset_cereal_box()
 
-    def reset_cereal_box(self):
-        tf = dartpy.math.Isometry3()
-        tf.set_translation(self.robot.body_pose(
-            self.eef_link_name).translation() + [0.0, 0.065, 0.05])
-        self.cereal_box.set_base_pose(tf)
+    # def reset_cereal_box(self):
+    #     tf = dartpy.math.Isometry3()
+    #     tf.set_translation(self.robot.body_pose(
+    #         self.eef_link_name).translation() + [0.0, 0.065, 0.05])
+    #     self.cereal_box.set_base_pose(tf)
 
     def setup_bowl(self):
         bowl_packages = [("bowl", "urdfs/bowl")]
@@ -154,25 +158,31 @@ class PourEnv(gym.Env):
 
     def reset_bowl(self):
         tf = self.bowl.base_pose()
-        tf.set_translation(self.get_state()[:3] + [0, 0, -0.65])
+        tf.set_translation(self.table.base_pose().translation() + [0, 0, 0.8])
         self.bowl.set_base_pose(tf)
+        self.bowl.fix_to_world()
 
-    def add_cereal(self, count=5):
+
+    def add_cereal(self, count=2):
+        box_tf = self.robot.body_pose("cerela_box")
         self.cereal_arr = []
-        box_tf = self.cereal_box.base_pose()
-        cereal_dims = [0.02, 0.02, 0.02]
-        cereal_mass = 0.001
-        cereal_color = [0.96, 0.82, 0.24, 1.]
+
+        cereal_dims = [0.01, 0.01, 0.01]
+        cereal_mass = 0.1
+        cereal_color = [1, 0., 0., 1.]
+
         for i in range(count):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] - 0.05 + (i % 2) / 10, box_tf.translation()[2]-0.01 + i/100 + 0.018]
+            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] , box_tf.translation()[2] -0.02 +  i * 0.01]
             cereal = rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
             self.cereal_arr.append(cereal)
             self.simu.add_robot(cereal)
 
+
+
     def reset_cereal(self):
-        box_tf = self.cereal_box.base_pose()
+        box_tf = self.robot.body_pose("cereal_box")
         for i in range(len(self.cereal_arr)):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] - 0.05 + (i % 2) / 10, box_tf.translation()[2]-0.01 + i/100 + 0.018]
+            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[1] , box_tf.translation()[2] -0.02  + i * 0.01]
             self.cereal_arr[i].set_base_pose(cereal_pose)
 
     def setup_env(self):
@@ -181,8 +191,8 @@ class PourEnv(gym.Env):
         print("Added table")
         self.setup_robot()
         print("Added robot")
-        self.setup_cereal_box()
-        print("Added cereal box")
+        # self.setup_cereal_box()
+        # print("Added cereal box")
         self.add_cereal()
         print("Added cereal")
         self.setup_bowl()
@@ -190,7 +200,7 @@ class PourEnv(gym.Env):
 
     def reset(self):
         self.reset_robot()
-        self.reset_cereal_box()
+        # self.reset_cereal_box()
         self.reset_cereal()
         self.reset_bowl()
         print("Env reset successfully")
@@ -204,7 +214,7 @@ class PourEnv(gym.Env):
 
         return -reward * reward
 
-env = PourEnv()
+env = PourEnv(enable_graphics=False, enable_record=False)
 
 
 
