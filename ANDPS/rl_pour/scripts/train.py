@@ -87,7 +87,7 @@ class PourEnv(gym.Env):
         self.dt = dt
         # init simu
         self.simu = rd.RobotDARTSimu(self.dt)
-        self.simu.set_collision_detector("ode")
+        self.simu.set_collision_detector("fcl")
         # add checkerboard floor
         self.simu.add_checkerboard_floor()
 
@@ -104,10 +104,13 @@ class PourEnv(gym.Env):
                 "cerial-env.mp4", self.simu.graphics_freq())
 
     def setup_table(self):
-        table_packages = [("table", "urdfs/table")]
-        self.table = rd.Robot("urdfs/table/table.urdf",
-                              table_packages, "table")
-        self.table.set_color_mode("material")
+        # table_packages = [("table", "urdfs/table")]
+        # self.table = rd.Robot("urdfs/table/table.urdf",   tabie_packages, "table")
+        # self.table.set_color_mode("material")
+        table_dims = [3.,2.,0.1]
+        table_pose = [0,0,0,0,0,0.6]
+        table_color = [0.933, 0.870, 0.784,1.]
+        self.table = rd.Robot.create_box(table_dims, table_pose, "fix", mass=30., color=table_color, box_name="table")
         self.table.fix_to_world()
         self.simu.add_robot(self.table)
 
@@ -158,7 +161,7 @@ class PourEnv(gym.Env):
 
     def reset_bowl(self):
         tf = self.bowl.base_pose()
-        tf.set_translation(self.table.base_pose().translation() + [0, 0, 0.8])
+        tf.set_translation(self.table.base_pose().translation() + [0, 0, 0.1])
         self.bowl.set_base_pose(tf)
         self.bowl.fix_to_world()
 
