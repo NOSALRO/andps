@@ -106,8 +106,8 @@ class PourEnv(gym.Env):
         # table_packages = [("table", "urdfs/table")]
         # self.table = rd.Robot("urdfs/table/table.urdf",   tabie_packages, "table")
         # self.table.set_color_mode("material")
-        table_dims = [3.,2.,0.1]
-        table_pose = [0,0,0,0,0,0.6]
+        table_dims = [3.,2.,0.7]
+        table_pose = [0,0,0,0,0,0.35]
         table_color = [0.933, 0.870, 0.784,1.]
         self.table = rd.Robot.create_box(table_dims, table_pose, "fix", mass=30., color=table_color, box_name="table")
         self.table.fix_to_world()
@@ -120,7 +120,7 @@ class PourEnv(gym.Env):
         self.simu.add_robot(self.robot)
         self.eef_link_name = "panda_ee"
         tf = self.robot.base_pose()
-        tf.set_translation([-0.7, 0, 0.78])
+        tf.set_translation([-0.7, 0, 0.7])
         self.robot.set_base_pose(tf)
         self.robot.fix_to_world()
         self.robot.set_position_enforced(True)
@@ -160,12 +160,12 @@ class PourEnv(gym.Env):
 
     def reset_bowl(self):
         tf = self.bowl.base_pose()
-        tf.set_translation(self.table.base_pose().translation() + [0, 0, 0.1])
+        tf.set_translation(self.table.base_pose().translation() + [-0.3, 0.2, 0.37])
         self.bowl.set_base_pose(tf)
         self.bowl.fix_to_world()
 
 
-    def add_cereal(self, count=2):
+    def add_cereal(self, count=4):
         box_tf = self.robot.body_pose("panda_ee")
         self.cereal_arr = []
 
@@ -174,9 +174,9 @@ class PourEnv(gym.Env):
         cereal_color = [1, 0., 0., 1.]
 
         for i in range(count):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0] , box_tf.translation()[1] -0.05 , box_tf.translation()[2] +i * 0.015]
-            cereal = rd.Robot.create_ellipsoid(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, ellipsoid_name="cereal_" + str(i))
-            # cereal = rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
+            cereal_pose = [0., 0., 0., box_tf.translation()[0] , box_tf.translation()[1] -0.06 + (i%2)*0.01 , box_tf.translation()[2] +(i%(2+1)) * 0.001]
+            # cereal = rd.Robot.create_ellipsoid(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, ellipsoid_name="cereal_" + str(i))
+            cereal = rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
             self.cereal_arr.append(cereal)
             self.simu.add_robot(cereal)
 
@@ -207,6 +207,8 @@ class PourEnv(gym.Env):
         self.reset_cereal()
         self.reset_bowl()
         print("Env reset successfully")
+        for _ in range(100):
+            self.simu.step_world()
         return self.get_state()
 
     def calc_reward(self):
