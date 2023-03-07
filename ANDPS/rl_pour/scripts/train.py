@@ -9,6 +9,8 @@ import RobotDART as rd
 import matplotlib.pyplot as plt
 import scipy.stats
 from typing import Callable
+
+
 def EREulerXYZ(eulerXYZ):
     x = eulerXYZ[0]
     y = eulerXYZ[1]
@@ -27,8 +29,12 @@ def EREulerXYZ(eulerXYZ):
     R[2, 2] = cos_x * cos_y
 
     return R
+
+
 MAX_STEPS = 300
 EPOCHS = 1000
+
+
 class PourEnv(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
@@ -46,10 +52,13 @@ class PourEnv(gym.Env):
         self.max_steps = MAX_STEPS
 
         # define action space
-        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(6,), dtype=np.float32)
-        self.low_bounds = [self.robot.body_pose("panda_ee").translation()[0]-1, self.robot.body_pose("panda_ee").translation()[1]-1, self.robot.body_pose("panda_ee").translation()[2]-0.3]
-        self.high_bounds = [self.robot.body_pose("panda_ee").translation()[0]+1, self.robot.body_pose("panda_ee").translation()[1]+1, self.robot.body_pose("panda_ee").translation()[2]+0.3]
-        self.observation_space = gym.spaces.Box(low=np.array([self.low_bounds[0], self.low_bounds[1], self.low_bounds[2], -np.pi, -np.pi/2, -np.pi]), high=np.array([self.high_bounds[0], self.high_bounds[1], self.high_bounds[2], np.pi, np.pi/2, np.pi]), shape=(6,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=np.array(
+            [-4, -4, -4, -1, -1, -1]), high=np.array([4, 4, 4, 1, 1, 1]), shape=(6,), dtype=np.float32)
+        self.low_bounds = [self.table.base_pose().translation(
+        )[0]-1.5, self.table.base_pose().translation()[1]-1., self.table.base_pose().translation()[2]+0.45]
+        self.high_bounds = [self.table.base_pose().translation()[0]+1.5, self.table.base_pose(
+        ).translation()[1]+1., self.robot.body_pose("panda_ee").translation()[2]+1.]
+        self.observation_space = gym.spaces.Box(low=np.array([np.float32(np.float32(-np.pi)), np.float32(-np.pi/2), np.float32(-np.pi), np.float32(self.low_bounds[0]), np.float32(self.low_bounds[1]), np.float32(self.low_bounds[2])]), high=np.array([np.pi, np.pi/2, np.pi, self.high_bounds[0], self.high_bounds[1], self.high_bounds[2]]), shape=(6,), dtype=np.float32)
 
     def step(self, action):
         self.simu.step_world()
@@ -57,28 +66,34 @@ class PourEnv(gym.Env):
         reward = 0
         done = False
 
-        vel_rot = EREulerXYZ(self.get_state()[:3]) @ action[3:]
-
-        jac_pinv = damped_pseudoinverse(self.robot.jacobian(self.eef_link_name))
-        cmd = jac_pinv @ np.append(vel_rot,action[:3])
+        eulerXYZ = self.get_state()[:3]
+        vel_rot = EREulerXYZ(eulerXYZ) @ action[:3]
+        jac_pinv = damped_pseudoinverse(
+            self.robot.jacobian(self.eef_link_name))
+        # print("_"*10)
+        # print(action)
+        # print(vel_rot)
+        # print(np.append(vel_rot,action[:3]))
+        # print("_"*10)
+        cmd = jac_pinv @ np.append(vel_rot, action[:3])
         self.robot.set_commands(cmd)
         self.simu.step_world()
 
         observation = self.get_state()
         reward = self.calc_reward()
 
-        if (self.it == self.max_steps):
+        if (self.it == self.max_steps) or any(observation[3:] > self.high_bounds) or any(observation[3:] < self.low_bounds):
             done = True
             self.it = -1
-
 
         self.it += 1
         return observation, reward, done, {}
 
     def get_state(self):
         poseXYZ = self.robot.body_pose(self.eef_link_name).translation()
-        eulerXYZ = dartpy.math.matrixToEulerXYZ(self.robot.body_pose(self.eef_link_name).matrix()[:3, :3])
-        return np.append(poseXYZ,eulerXYZ)
+        eulerXYZ = dartpy.math.matrixToEulerXYZ(
+            self.robot.body_pose(self.eef_link_name).matrix()[:3, :3])
+        return np.append(eulerXYZ, poseXYZ)
 
     def render(self):
         print(self.get_state())
@@ -100,22 +115,26 @@ class PourEnv(gym.Env):
         self.graphics.look_at((1.5, 1.5, 2.), (0.0, 0.0, 0.5))
         if (enable_record):
             self.graphics.camera().record(True)
-            self.graphics.record_video("cerial-env.mp4", self.simu.graphics_freq())
+            self.graphics.record_video(
+                "cerial-env.mp4", self.simu.graphics_freq())
 
     def setup_table(self):
         # table_packages = [("table", "urdfs/table")]
         # self.table = rd.Robot("urdfs/table/table.urdf",   tabie_packages, "table")
         # self.table.set_color_mode("material")
-        table_dims = [3.,2.,0.7]
-        table_pose = [0,0,0,0,0,0.35]
-        table_color = [0.933, 0.870, 0.784,1.]
-        self.table = rd.Robot.create_box(table_dims, table_pose, "fix", mass=30., color=table_color, box_name="table")
+        table_dims = [3., 2., 0.7]
+        table_pose = [0, 0, 0, 0, 0, 0.35]
+        table_color = [0.933, 0.870, 0.784, 1.]
+        self.table = rd.Robot.create_box(
+            table_dims, table_pose, "fix", mass=30., color=table_color, box_name="table")
         self.table.fix_to_world()
         self.simu.add_robot(self.table)
 
     def setup_robot(self):
-        franka_packages = [("franka_description", "urdfs/franka/franka_description")]
-        self.robot = rd.Robot("urdfs/franka/franka.urdf",  franka_packages,"franka")
+        franka_packages = [
+            ("franka_description", "urdfs/franka/franka_description")]
+        self.robot = rd.Robot("urdfs/franka/franka.urdf",
+                              franka_packages, "franka")
         self.robot.set_color_mode("material")
         self.simu.add_robot(self.robot)
         self.eef_link_name = "panda_ee"
@@ -160,32 +179,34 @@ class PourEnv(gym.Env):
 
     def reset_bowl(self):
         tf = self.bowl.base_pose()
-        tf.set_translation(self.table.base_pose().translation() + [-0.3, 0.2, 0.37])
+        tf.set_translation(
+            self.table.base_pose().translation() + [-0.3, 0.2, 0.37])
         self.bowl.set_base_pose(tf)
         self.bowl.fix_to_world()
-
 
     def add_cereal(self, count=4):
         box_tf = self.robot.body_pose("panda_ee")
         self.cereal_arr = []
 
         cereal_dims = [0.02, 0.02, 0.02]
-        cereal_mass = 0.1
+        cereal_mass = 1
         cereal_color = [1, 0., 0., 1.]
 
         for i in range(count):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0] , box_tf.translation()[1] -0.06 + (i%2)*0.01 , box_tf.translation()[2] +(i%(2+1)) * 0.001]
+            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation(
+            )[1] - 0.06 + (i % 2)*0.01, box_tf.translation()[2] + (i % (2+1)) * 0.001]
             # cereal = rd.Robot.create_ellipsoid(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, ellipsoid_name="cereal_" + str(i))
-            cereal = rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
+            cereal = rd.Robot.create_box(
+                cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
             self.cereal_arr.append(cereal)
             self.simu.add_robot(cereal)
-
-
 
     def reset_cereal(self):
         box_tf = self.robot.body_pose("cereal_box")
         for i in range(len(self.cereal_arr)):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0] , box_tf.translation()[1]-0.05 , box_tf.translation()[2] +i * 0.015]
+            cereal_pose = [0., 0., 0., box_tf.translation()[0], box_tf.translation()[
+                1]-0.05, box_tf.translation()[2] + i * 0.015]
+            self.cereal_arr[i].reset()
             self.cereal_arr[i].set_base_pose(cereal_pose)
 
     def setup_env(self):
@@ -215,21 +236,22 @@ class PourEnv(gym.Env):
         # reward is the sum of distances of every "cereal" to the bowl
         reward = 0
         for cereal in (self.cereal_arr):
-            reward += np.linalg.norm(self.bowl.base_pose().translation() - cereal.base_pose().translation())
+            reward += np.linalg.norm(self.bowl.base_pose().translation() -
+                                     cereal.base_pose().translation())
 
         return -reward * reward
+
 
 env = PourEnv(enable_graphics=True, enable_record=True)
 
 
-
-
-# model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)#, train_freq=int(MAX_STEPS/2), gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
-model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-4, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256, action_noise=NormalActionNoise(0., 1.))
+# , train_freq=int(MAX_STEPS/2), gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
+model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)
+# model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-4, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256, action_noise=NormalActionNoise(0., 1.))
 # model = algo.load("cereal_killer")
 # model.set_env(env)
 # model.learning_rate = 5e-4
-model.learn(total_timesteps = 800 * EPOCHS)
+model.learn(total_timesteps=800 * EPOCHS)
 model.save("cereal_killer")
 
 
@@ -239,6 +261,6 @@ for i in range(env.max_steps):
     print(action, _state)
     obs, reward, done, info = env.step(action.reshape(6,))
     # if i == 0:
-        # env.render()
+    # env.render()
     if done:
         break
