@@ -100,8 +100,7 @@ class PourEnv(gym.Env):
         self.graphics.look_at((1.5, 1.5, 2.), (0.0, 0.0, 0.5))
         if (enable_record):
             self.graphics.camera().record(True)
-            self.graphics.record_video(
-                "cerial-env.mp4", self.simu.graphics_freq())
+            self.graphics.record_video("cerial-env.mp4", self.simu.graphics_freq())
 
     def setup_table(self):
         # table_packages = [("table", "urdfs/table")]
@@ -134,8 +133,8 @@ class PourEnv(gym.Env):
         positions[4] = np.pi / 2.0
         positions[5] = np.pi / 2.0
         positions[6] = 3*np.pi/4
-        positions[7] = 0.015
-        positions[8] = 0.015
+        # positions[7] = 0.015
+        # positions[8] = 0.015
         self.robot.set_positions(positions)
 
     # def setup_cereal_box(self):
@@ -167,16 +166,17 @@ class PourEnv(gym.Env):
 
 
     def add_cereal(self, count=2):
-        box_tf = self.robot.body_pose("cerela_box")
+        box_tf = self.robot.body_pose("panda_ee")
         self.cereal_arr = []
 
-        cereal_dims = [0.04, 0.04, 0.04]
+        cereal_dims = [0.02, 0.02, 0.02]
         cereal_mass = 0.1
         cereal_color = [1, 0., 0., 1.]
 
         for i in range(count):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0] -0.1 +  i * 0.1, box_tf.translation()[1]-0.1 +  i * 0.15, box_tf.translation()[2] +0.15]
-            cereal = rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
+            cereal_pose = [0., 0., 0., box_tf.translation()[0] , box_tf.translation()[1] -0.05 , box_tf.translation()[2] +i * 0.015]
+            cereal = rd.Robot.create_ellipsoid(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, ellipsoid_name="cereal_" + str(i))
+            # cereal = rd.Robot.create_box(cereal_dims, cereal_pose, "free", mass=cereal_mass, color=cereal_color, box_name="cereal " + str(i))
             self.cereal_arr.append(cereal)
             self.simu.add_robot(cereal)
 
@@ -185,7 +185,7 @@ class PourEnv(gym.Env):
     def reset_cereal(self):
         box_tf = self.robot.body_pose("cereal_box")
         for i in range(len(self.cereal_arr)):
-            cereal_pose = [0., 0., 0., box_tf.translation()[0] -0.1 +  i * 0.1, box_tf.translation()[1]-0.1 +  i * 0.1, box_tf.translation()[2] +0.1]
+            cereal_pose = [0., 0., 0., box_tf.translation()[0] , box_tf.translation()[1]-0.05 , box_tf.translation()[2] +i * 0.015]
             self.cereal_arr[i].set_base_pose(cereal_pose)
 
     def setup_env(self):
@@ -222,13 +222,13 @@ env = PourEnv(enable_graphics=True, enable_record=True)
 
 
 
-model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)#, train_freq=int(MAX_STEPS/2), gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
-# model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-4)#, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
+# model = algo(SACDensePolicy, env, verbose=1, learning_rate=0.001)#, train_freq=int(MAX_STEPS/2), gradient_steps=200, batch_size=256, learning_starts=256)#, action_noise=NormalActionNoise(0., 1.))
+model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-4, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256, action_noise=NormalActionNoise(0., 1.))
 # model = algo.load("cereal_killer")
 # model.set_env(env)
 # model.learning_rate = 5e-4
 model.learn(total_timesteps = 800 * EPOCHS)
-# model.save("cereal_killer")
+model.save("cereal_killer")
 
 
 obs = env.reset()
