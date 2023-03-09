@@ -38,13 +38,15 @@ class RolloutBuffer:
 
 
 class ActorAndps(nn.Module):
-    def __init__(self, ds_dim, N=4):
+    def __init__(self, ds_dim, lims, N=4):
         super(ActorAndps, self).__init__()
         self.N = N
         # print("N = ", N)
         self.ds_dim = ds_dim
         self.n_params = ds_dim
-
+        self.target_lims_x = torch.Tensor([])
+        self.target_lims_y = torch.Tensor([])
+        self.target_lims_z = torch.Tensor([])
         self.all_params_B_A = nn.ModuleList(
             [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
 
@@ -58,13 +60,24 @@ class ActorAndps(nn.Module):
             geotorch.skew(self.all_params_C_A[i])
 
         self.all_weights = nn.Sequential(nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
-        self.x_tar = nn.Parameter(torch.randn(self.ds_dim))  # .to(device)
+        # if lims is None:
+        self.p = nn.Parameter(torch.randn(self.ds_dim))  # .to(device)
+        self.lims = lims
+        # else:
+        #     p = nn.Parameter(torch.randn(self.ds_dim))
+        #     # print(lims[0])
+        #     # print(lims[1])
+        #     # input()
+        #     self.x_tar = (torch.Tensor(lims[0]).requires_grad_(False) + torch.tanh(p) * torch.Tensor(lims[1]).requires_grad_(False)).to(device)
 
     def forward(self, x):
         x = x.reshape(-1,6)
         batch_size = x.shape[0]
         s_all = torch.zeros((1, self.ds_dim)).to(x.device)
         w_all = self.all_weights(x)
+
+        self.x_tar = (torch.Tensor(self.lims[0]).requires_grad_(False).to(device) + torch.tanh(self.p.to(device)) * torch.Tensor(self.lims[1]).requires_grad_(False).to(device))
+        # print(self.x_tar)
         for i in range(self.N):
             A = (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight)
             s_all = s_all + torch.mul(w_all[:, i].view(batch_size, 1), torch.mm(A, (self.x_tar-x).transpose(0, 1)).transpose(0, 1))
@@ -72,7 +85,7 @@ class ActorAndps(nn.Module):
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, has_continuous_action_space, action_std_init):
+    def __init__(self, state_dim, action_dim, has_continuous_action_space, action_std_init, lims):
         super(ActorCritic, self).__init__()
 
         self.has_continuous_action_space = has_continuous_action_space
@@ -82,7 +95,7 @@ class ActorCritic(nn.Module):
             self.action_var = torch.full((action_dim,), action_std_init * action_std_init).to(device)
         # actor
         if has_continuous_action_space :
-            self.actor =ActorAndps(state_dim,N=5)
+            self.actor =ActorAndps(state_dim,lims,N=5)
         else:
             self.actor = nn.Sequential(
                             nn.Linear(state_dim, 64),
@@ -151,7 +164,7 @@ class ActorCritic(nn.Module):
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std_init=0.6):
+    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std_init=0.6, lims = None):
 
         self.has_continuous_action_space = has_continuous_action_space
 
@@ -164,13 +177,13 @@ class PPO:
 
         self.buffer = RolloutBuffer()
 
-        self.policy = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
+        self.policy = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init, lims).to(device)
         self.optimizer = torch.optim.Adam([
                         {'params': self.policy.actor.parameters(), 'lr': lr_actor},
                         {'params': self.policy.critic.parameters(), 'lr': lr_critic}
                     ])
 
-        self.policy_old = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
+        self.policy_old = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init, lims).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()

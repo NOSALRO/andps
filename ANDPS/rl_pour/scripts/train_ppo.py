@@ -57,7 +57,7 @@ class PourEnv(gym.Env):
 
         # define action space
         self.action_space = gym.spaces.Box(low=np.array(
-            [-0.5, -0.5, -0.5, -0.5, -0.5, -0.5]), high=np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5]), shape=(6,), dtype=np.float32)
+            [-1, -1, -1, -1, -1, -1]), high=np.array([1, 1, 1, 1, 1, 1]), shape=(6,), dtype=np.float32)
         self.low_bounds = [self.table.base_pose().translation(
         )[0]-1.5, self.table.base_pose().translation()[1]-1., self.table.base_pose().translation()[2]+0.35]
         self.high_bounds = [self.table.base_pose().translation()[0]+1.5, self.table.base_pose(
@@ -184,7 +184,7 @@ class PourEnv(gym.Env):
     def reset_bowl(self):
         tf = self.bowl.base_pose()
         tf.set_translation(
-            self.table.base_pose().translation() + [-0.3, -0.2, 0.37])
+            self.table.base_pose().translation() + [-0.3, 0.2, 0.37])
         self.bowl.set_base_pose(tf)
         self.bowl.fix_to_world()
 
@@ -238,12 +238,40 @@ class PourEnv(gym.Env):
 
     def calc_reward(self):
         reward = 0
-        p = 0.5
+        p = 0.2
         for cereal in self.cereal_arr:
-
             reward+= np.exp(-0.5 * np.linalg.norm(self.bowl.base_pose().translation() -cereal.base_pose().translation())/(p**2))
 
         return reward
+
+    def get_limits(self):
+
+        # lim_eX = [-np.pi, np.pi]
+        # lim_eY = [-np.pi/2, np.pi/2]
+        # lim_eZ = [-np.pi, np.pi]
+        # lim_z = [self.robot.base_pose().translation()[2], self.robot.base_pose().translation()[0] + 1.190]
+        # lim_x = [self.robot.base_pose().translation()[0]-0.855, self.robot.base_pose().translation()[1] + 0.855]
+        # lim_y = [self.robot.base_pose().translation()[1]-0.855, self.robot.base_pose().translation()[2] + 0.855]
+
+        # I want to write the lims in the form y= Ax + b
+        # x has to be 1 value and not a tuble, and as a result i want the limits to be symmetrical so:
+
+        b_eX = 0
+        b_eY = 0
+        b_eZ = 0
+        b_z = self.robot.base_pose().translation()[2] + 1.190/2
+        b_x = self.robot.base_pose().translation()[0]
+        b_y = self.robot.base_pose().translation()[1]
+
+        A_eX = np.pi # * (-1,1)
+        A_eY = np.pi/2
+        A_eZ = np.pi
+        A_z = 1.190/2
+        A_x = 0.855
+        A_y = 0.855
+        return np.array([[b_eX, b_eY, b_eZ, b_x, b_y,b_z ], [A_eX, A_eY, A_eZ, A_x, A_y, A_z]]).copy()
+
+
 
 
 
@@ -252,7 +280,7 @@ def train():
     print("============================================================================================")
 
     ####### initialize environment hyperparameters ######
-    env_name = "PourEnv-v1"
+    env_name = "PourEnv-v2"
 
     has_continuous_action_space = True  # continuous action space; else discrete
 
@@ -263,7 +291,7 @@ def train():
     log_freq = max_ep_len * 2           # log avg reward in the interval (in num timesteps)
     save_model_freq = int(1e5)          # save model frequency (in num timesteps)
 
-    action_std = 0.6                    # starting std for action distribution (Multivariate Normal)
+    action_std = 0.8                    # starting std for action distribution (Multivariate Normal)
     action_std_decay_rate = 0.05        # linearly decay action_std (action_std = action_std - action_std_decay_rate)
     min_action_std = 0.1                # minimum action_std (stop decay after action_std <= min_action_std)
     action_std_decay_freq = int(2.5e5)  # action_std decay frequency (in num timesteps)
@@ -272,21 +300,21 @@ def train():
     ## Note : print/log frequencies should be > than max_ep_len
 
     ################ PPO hyperparameters ################
-    update_timestep = max_ep_len * 4      # update policy every n timesteps
-    K_epochs = 80               # update policy for K epochs in one PPO update
+    update_timestep = max_ep_len //2      # update policy every n timesteps
+    K_epochs = 256               # update policy for K epochs in one PPO update
 
     eps_clip = 0.2          # clip parameter for PPO
     gamma = 0.99            # discount factor
 
     lr_actor = 5e-4       # learning rate for actor network
-    lr_critic = 5e-4       # learning rate for critic network
+    lr_critic = 1e-3       # learning rate for critic network
 
     random_seed = 0         # set random seed if required (0 = no random seed)
     #####################################################
 
     print("training environment name : " + env_name)
 
-    env = PourEnv(True, False,seed =random_seed)
+    env = PourEnv(True, True,seed =random_seed)
 
     # state space dimension
     state_dim = env.observation_space.shape[0]
@@ -376,9 +404,9 @@ def train():
     print("============================================================================================")
 
     ################# training procedure ################
-
+    lims = env.get_limits()
     # initialize a PPO agent
-    ppo_agent = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std)
+    ppo_agent = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std, lims)
 
     # track total training time
     start_time = datetime.now().replace(microsecond=0)
