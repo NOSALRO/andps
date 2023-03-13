@@ -38,6 +38,29 @@ def EREulerXYZ(eulerXYZ):
 
     return R
 
+def box_into_basket(box_translation, basket_translation, basket_angle):
+    basket_xy_corners = np.array([basket_translation[0] + 0.14, basket_translation[0] + 0.14, basket_translation[0] - 0.14, basket_translation[0] - 0.14,
+                                  basket_translation[1] - 0.08, basket_translation[1] + 0.08, basket_translation[1] + 0.08, basket_translation[1] - 0.08], dtype=np.float64).reshape(2, 4)
+
+    rotation_matrix = np.array([np.cos(basket_angle), np.sin(basket_angle), -np.sin(basket_angle), np.cos(basket_angle)], dtype=np.float64).reshape(2, 2)
+
+    basket_center = np.array([basket_translation[0], basket_translation[1]], dtype=np.float64).reshape(2, 1)
+    rotated_basket_xy_corners = np.matmul(rotation_matrix, (basket_xy_corners - basket_center)) + basket_center
+
+    d1 = (rotated_basket_xy_corners[0][1] - rotated_basket_xy_corners[0][0]) * (box_translation[1] - rotated_basket_xy_corners[1][0]) - \
+        (box_translation[0] - rotated_basket_xy_corners[0][0]) * (rotated_basket_xy_corners[1][1] - rotated_basket_xy_corners[1][0])
+    d2 = (rotated_basket_xy_corners[0][2] - rotated_basket_xy_corners[0][1]) * (box_translation[1] - rotated_basket_xy_corners[1][1]) - \
+        (box_translation[0] - rotated_basket_xy_corners[0][1]) * (rotated_basket_xy_corners[1][2] - rotated_basket_xy_corners[1][1])
+    d3 = (rotated_basket_xy_corners[0][3] - rotated_basket_xy_corners[0][2]) * (box_translation[1] - rotated_basket_xy_corners[1][2]) - \
+        (box_translation[0] - rotated_basket_xy_corners[0][2]) * (rotated_basket_xy_corners[1][3] - rotated_basket_xy_corners[1][2])
+    d4 = (rotated_basket_xy_corners[0][0] - rotated_basket_xy_corners[0][3]) * (box_translation[1] - rotated_basket_xy_corners[1][3]) - \
+        (box_translation[0] - rotated_basket_xy_corners[0][3]) * (rotated_basket_xy_corners[1][0] - rotated_basket_xy_corners[1][3])
+
+    if ((d1 > 0.0) and (d2 > 0.0) and (d3 > 0.0) and (d4 > 0.0) and (box_translation[2] <= 0.04)):
+        return True
+    else:
+        return False
+
 
 class PourEnv(gym.Env):
     """Custom Environment that follows gym interface"""
@@ -175,8 +198,8 @@ class PourEnv(gym.Env):
     #     self.cereal_box.set_base_pose(tf)
 
     def setup_bowl(self):
-        bowl_packages = [("bowl", "urdfs/bowl")]
-        self.bowl = rd.Robot("urdfs/bowl/bowl.urdf",  bowl_packages, "bowl")
+        bowl_packages = [("basket", "urdfs/basket")]
+        self.bowl = rd.Robot("urdfs/basket/basket.urdf",  bowl_packages, "basket")
         self.bowl.set_color_mode("material")
         self.simu.add_robot(self.bowl)
         self.reset_bowl()
@@ -238,10 +261,10 @@ class PourEnv(gym.Env):
 
     def calc_reward(self):
         reward = 0
-        p = 0.2
+        # p = 0.2
         for cereal in self.cereal_arr:
-            reward+= np.exp(-0.5 * np.linalg.norm(self.bowl.base_pose().translation() -cereal.base_pose().translation())/(p**2))
-
+            # reward+= np.exp(-0.5 * np.linalg.norm(self.bowl.base_pose().translation() -cereal.base_pose().translation())/(p**2))
+            reward+= int(box_into_basket(cereal.base_pose().translation(),self.bowl.base_pose().translation(), dartpy.math.matrixToEulerXYZ(self.bowl.base_pose().rotation())[2]))
         return reward
 
     def get_limits(self):

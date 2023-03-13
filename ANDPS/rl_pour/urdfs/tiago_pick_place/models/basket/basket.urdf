@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<robot name="basket">
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="1"/>
+            <!-- <inertia ixx="0.08333333333"  ixy="0"  ixz="0" iyy="0.08333333333" iyz="0" izz="0.08333333333" /> -->
+            <inertia ixx="0.4"  ixy="0"  ixz="0" iyy="0.4" iyz="0" izz="0.4" />
+        </inertial>
+
+        <visual>
+            <origin xyz="0 0 0" rpy="1.57 0 0" />
+            <geometry>
+                <mesh filename="package://basket/basket.obj" scale="0.018 0.018 0.018" />
+            </geometry>
+        </visual>
+
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="package://basket/basket_collision.dae" scale="0.018 0.018 0.018" />
+            </geometry>
+        </collision>
+    </link>
+</robot>
