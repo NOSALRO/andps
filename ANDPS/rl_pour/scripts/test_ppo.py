@@ -16,8 +16,8 @@ import dartpy
 from utils import damped_pseudoinverse, angle_wrap
 import numpy as np
 import RobotDART as rd
-MAX_STEPS = 500
 
+MAX_STEPS = 500
 
 def EREulerXYZ(eulerXYZ):
     x = eulerXYZ[0]
@@ -38,13 +38,35 @@ def EREulerXYZ(eulerXYZ):
 
     return R
 
+def box_into_basket(box_translation, basket_translation, basket_angle):
+    basket_xy_corners = np.array([basket_translation[0] + 0.14, basket_translation[0] + 0.14, basket_translation[0] - 0.14, basket_translation[0] - 0.14,
+                                  basket_translation[1] - 0.08, basket_translation[1] + 0.08, basket_translation[1] + 0.08, basket_translation[1] - 0.08], dtype=np.float64).reshape(2, 4)
+
+    rotation_matrix = np.array([np.cos(basket_angle), np.sin(basket_angle), -np.sin(basket_angle), np.cos(basket_angle)], dtype=np.float64).reshape(2, 2)
+
+    basket_center = np.array([basket_translation[0], basket_translation[1]], dtype=np.float64).reshape(2, 1)
+    rotated_basket_xy_corners = np.matmul(rotation_matrix, (basket_xy_corners - basket_center)) + basket_center
+
+    d1 = (rotated_basket_xy_corners[0][1] - rotated_basket_xy_corners[0][0]) * (box_translation[1] - rotated_basket_xy_corners[1][0]) - \
+        (box_translation[0] - rotated_basket_xy_corners[0][0]) * (rotated_basket_xy_corners[1][1] - rotated_basket_xy_corners[1][0])
+    d2 = (rotated_basket_xy_corners[0][2] - rotated_basket_xy_corners[0][1]) * (box_translation[1] - rotated_basket_xy_corners[1][1]) - \
+        (box_translation[0] - rotated_basket_xy_corners[0][1]) * (rotated_basket_xy_corners[1][2] - rotated_basket_xy_corners[1][1])
+    d3 = (rotated_basket_xy_corners[0][3] - rotated_basket_xy_corners[0][2]) * (box_translation[1] - rotated_basket_xy_corners[1][2]) - \
+        (box_translation[0] - rotated_basket_xy_corners[0][2]) * (rotated_basket_xy_corners[1][3] - rotated_basket_xy_corners[1][2])
+    d4 = (rotated_basket_xy_corners[0][0] - rotated_basket_xy_corners[0][3]) * (box_translation[1] - rotated_basket_xy_corners[1][3]) - \
+        (box_translation[0] - rotated_basket_xy_corners[0][3]) * (rotated_basket_xy_corners[1][0] - rotated_basket_xy_corners[1][3])
+
+    if ((d1 > 0.0) and (d2 > 0.0) and (d3 > 0.0) and (d4 > 0.0) and (box_translation[2] <= 0.04)):
+        return True
+    else:
+        return False
 
 
 class PourEnv(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, enable_graphics=True, enable_record=True, seed=-1, dt=0.01):
+    def __init__(self, enable_graphics=False, enable_record=False, seed=-1, dt=0.01):
         self.setup_simu(dt)
         if (enable_graphics):
             self.setup_graphics(enable_record)
@@ -232,17 +254,53 @@ class PourEnv(gym.Env):
         # self.reset_cereal_box()
         self.reset_cereal()
         self.reset_bowl()
-        print("Env reset successfully")
+        # print("Env reset successfully")
         for _ in range(100):
             self.simu.step_world()
         return self.get_state()
 
     def calc_reward(self):
-        reward = 0
-        for cereal in (self.cereal_arr):
-            reward += np.linalg.norm(self.bowl.base_pose().translation() -cereal.base_pose().translation())
+        reward_cereal = 0
+        p = 0.2
+        for cereal in self.cereal_arr:
+            reward_cereal+= np.exp(-0.5 * np.linalg.norm(self.bowl.base_pose().translation() -cereal.base_pose().translation())/(p**2)) / len(self.cereal_arr)
+            # reward_cereal+= int(box_into_basket(cereal.base_pose().translation(),self.bowl.base_pose().translation(), dartpy.math.matrixToEulerXYZ(self.bowl.base_pose().rotation())[2]))
+        reward_rot = np.cos(angle_wrap(-np.pi/2 - dartpy.math.matrixToEulerXYZ(self.robot.body_pose(self.eef_link_name).matrix()[:3, :3])[2]))
+        reward_pos = np.linalg.norm(self.bowl.base_pose().translation()[:2]-self.robot.body_pose(self.eef_link_name).translation()[:2])
+        w0 = 10.
+        w1 = 1.
+        w2 = 5.
+        return w0*reward_cereal + w1*reward_rot + w2*reward_pos
 
-        return -reward * reward + np.cos(angle_wrap(-np.pi/2 - dartpy.math.matrixToEulerXYZ(self.robot.body_pose(self.eef_link_name).rotation())[2]))
+    def get_limits(self):
+
+        # lim_eX = [-np.pi, np.pi]
+        # lim_eY = [-np.pi/2, np.pi/2]
+        # lim_eZ = [-np.pi, np.pi]
+        # lim_z = [self.robot.base_pose().translation()[2], self.robot.base_pose().translation()[0] + 1.190]
+        # lim_x = [self.robot.base_pose().translation()[0]-0.855, self.robot.base_pose().translation()[1] + 0.855]
+        # lim_y = [self.robot.base_pose().translation()[1]-0.855, self.robot.base_pose().translation()[2] + 0.855]
+
+        # I want to write the lims in the form y= Ax + b
+        # x has to be 1 value and not a tuble, and as a result i want the limits to be symmetrical so:
+
+        b_eX = 0
+        b_eY = 0
+        b_eZ = 0
+        b_z = self.robot.base_pose().translation()[2] + 1.190/2
+        b_x = self.robot.base_pose().translation()[0]
+        b_y = self.robot.base_pose().translation()[1]
+
+        A_eX = np.pi # * (-1,1)
+        A_eY = np.pi/2
+        A_eZ = np.pi
+        A_z = 1.190/2
+        A_x = 0.855
+        A_y = 0.855
+        return np.array([[b_eX, b_eY, b_eZ, b_x, b_y,b_z ], [A_eX, A_eY, A_eZ, A_x, A_y, A_z]]).copy()
+
+
+
 
 
 #################################### Testing ###################################
@@ -266,7 +324,7 @@ def test():
     # max_ep_len = 1500           # max timesteps in one episode
     # action_std = 0.1            # set same std for action distribution which was used while saving
 
-    env_name = "PourEnv-v1"
+    env_name = "PourEnv-v3"
     has_continuous_action_space = True
     max_ep_len = 1000           # max timesteps in one episode
     action_std = 0.1            # set same std for action distribution which was used while saving
@@ -296,8 +354,10 @@ def test():
     else:
         action_dim = env.action_space.n
 
+    lims = env.get_limits()
     # initialize a PPO agent
-    ppo_agent = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std)
+    ppo_agent = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std, lims)
+
 
     # preTrained weights directory
 

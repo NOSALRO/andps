@@ -61,8 +61,9 @@ class ActorAndps(nn.Module):
 
         self.all_weights = nn.Sequential(nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
         # if lims is None:
-        self.p = nn.Parameter(torch.randn(self.ds_dim))  # .to(device)
+        self.p = nn.Parameter(torch.randn(self.ds_dim)).to(device)
         self.lims = lims
+        self.x_tar = None
         # else:
         #     p = nn.Parameter(torch.randn(self.ds_dim))
         #     # print(lims[0])
