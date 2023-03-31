@@ -12,6 +12,18 @@ import torch.nn as nn
 import gym
 from gym import spaces
 import geotorch
+import dartpy
+import RobotDART as rd
+from envs import PourEnv
+from utils import EREulerXYZ
+
+np.finfo(np.dtype("float32"))
+np.finfo(np.dtype("float64"))
+
+
+from utils import *
+
+MAX_STEPS = 1000
 # ES related code
 num_episode = 1
 eval_steps = 25  # evaluate every N_eval steps
@@ -50,13 +62,8 @@ RESULT_PACKET_SIZE = 4*num_worker_trial
 ###
 
 
-def count_parameters(model):
-    # return sum(p.numel() for p in model.parameters() if p.requires_grad)
-    return
-
-
 class simplest_andps(nn.Module):
-    def __init__(self, ds_dim, N=3):
+    def __init__(self, ds_dim, N=5):
         super(simplest_andps, self).__init__()
         print(ds_dim)
         self.ds_dim = ds_dim
@@ -72,32 +79,23 @@ class simplest_andps(nn.Module):
 
         self.all_weights = nn.Sequential(nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
         self.x_tar= nn.Parameter(torch.randn(self.ds_dim))
-        self.env = Plane()
-        self.param_count = 101
+        self.env = PourEnv(enable_graphics=False, enable_record=False, seed=-1, dt=0.01)
+        self.param_count = self.count_parameters()
 
-    def forward(self, x, disp=False):
-        # print("_"*10)
-        # print(x.shape)
-        # print(self.x_tar.shape)
-        # print("_"*10)
+    def forward(self, x):
         x = torch.Tensor(x.reshape(-1, self.ds_dim))
         batch_size = x.shape[0]
         s_all = torch.zeros((1, self.ds_dim))
-        # w_all = torch.zeros((batch_size, self.N))
-
         w_all = self.all_weights(x)
-        #w_all = torch.nn.functional.softmax(w_all, dim=1)
-        if disp:
-            print(w_all)
-
         for i in range(self.N):
             A = (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight)
 
             s_all = s_all + torch.mul(w_all[:, i].view(batch_size, 1), torch.mm(
                 A, (self.x_tar-x).transpose(0, 1)).transpose(0, 1))
-        return s_all.reshape(2,)
+        return s_all
 
     def set_model_params(self, model_params):
+        # set the parameters of the model
         i = 0
         model_dict = self.state_dict()
         for key in model_dict.keys():
@@ -108,35 +106,15 @@ class simplest_andps(nn.Module):
         # print(i)
         self.load_state_dict(model_dict)
 
+    def count_parameters(self):
+        # "dump way to count the number of parameters" as numel for each parameter that requires grad does
+        # not produce the correct number of parameters
+        count = 0
+        model_dict = self.state_dict()
+        for key in model_dict.keys():
+            count += model_dict[key].numel()
 
-class Plane(gym.Env):
-    def __init__(self):
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,))
-        self.observation_space = spaces.Box(low=-10.0, high=10.0, shape=(2,))
-        self.current_position = None
-        self.target_position = None
-        self.max_steps = 500
-        self.current_step = None
-        self.dt = 0.01
-
-    def reset(self):
-        self.current_position = np.random.uniform(
-            low=-10.0, high=10.0, size=(2,))
-        self.target_position = [1., 2.]
-        self.current_step = 0
-        return self.current_position
-
-    def step(self, action):
-        # print(action)
-        self.current_position += action * self.dt
-        distance = np.linalg.norm(self.current_position - self.target_position)
-        reward = -distance
-        done = self.current_step == self.max_steps
-        self.current_step += 1
-        return self.current_position, reward, done, {}
-
-    def render(self, mode='human'):
-        pass
+        return count
 
 
 def initialize_settings(sigma_init=0.1, sigma_decay=0.9999):
@@ -146,7 +124,7 @@ def initialize_settings(sigma_init=0.1, sigma_decay=0.9999):
     filebase = 'log/'+gamename+'.'+optimizer + \
         '.'+str(num_episode)+'.'+str(population)
 
-    model = simplest_andps(2)
+    model = simplest_andps(6)
     num_params = model.param_count
     print("size of model", num_params)
 
@@ -271,9 +249,9 @@ def decode_result_packet(packet):
     r = packet.reshape(num_worker_trial, 4)
     workers = r[:, 0].tolist()
     jobs = r[:, 1].tolist()
-    fits = r[:, 2].astype(np.float)/PRECISION
+    fits = r[:, 2].astype(float)/PRECISION
     fits = fits.tolist()
-    times = r[:, 3].astype(np.float)/PRECISION
+    times = r[:, 3].astype(float)/PRECISION
     times = times.tolist()
     result = []
     n = len(jobs)
@@ -387,7 +365,7 @@ def receive_packets_from_slaves():
 
     reward_list_total = np.zeros((population, 2))
 
-    check_results = np.ones(population, dtype=np.int)
+    check_results = np.ones(population, dtype=int)
     for i in range(1, num_worker+1):
         comm.Recv(result_packet, source=i)
         results = decode_result_packet(result_packet)
@@ -540,7 +518,7 @@ def master():
 
 def main(args):
     global gamename, optimizer, num_episode, eval_steps, num_worker, num_worker_trial, antithetic, seed_start, retrain_mode, cap_time_mode
-    gamename = "Plane"
+    gamename = "PourEnv"
     optimizer = args.optimizer
     num_episode = args.num_episode
     eval_steps = args.eval_steps
