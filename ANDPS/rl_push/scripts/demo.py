@@ -46,8 +46,7 @@ box = rd.Robot("robots/star/star.urdf",   box_packages, "star")
 # box.set_color_mode("material")
 box.set_base_pose([0., 0., 0.5,  0., 0., 0.8])
 # Ghost target
-target = rd.Robot.create_ellipsoid([0.25, 0.25, 0.001], [
-                                   0., 0., 0., 0.5, 0.5, 0.8], "fixed", mass=0.01, color=[0.0, 1.0, 0.0, 0.5], ellipsoid_name="target")
+target = rd.Robot.create_ellipsoid([0.25, 0.25, 0.001], [0., 0., 0., 0.5, 0.5, 0.8], "fixed", mass=0.01, color=[0.0, 1.0, 0.0, 0.5], ellipsoid_name="target")
 
 # Αdd robots
 simu.add_robot(table)
@@ -57,5 +56,6 @@ simu.add_visual_robot(target)
 # Add nice floor
 simu.add_checkerboard_floor()
 
+print(robot.body_names())
 # Run simulation for 50 seconds
 simu.run(50.)
