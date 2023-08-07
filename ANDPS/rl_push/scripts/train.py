@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 EPOCHS = 10000
 MAX_STEPS = 400
 
-push_env = PushEnv(enable_graphics=True,
+push_env = PushEnv(enable_graphics=False,
                    enable_record=False, seed=-1, dt=0.01)
 push_env.reset()
 
@@ -24,7 +24,7 @@ model = algo(SACDensePolicy, push_env, verbose=1, learning_rate=5e-4, train_freq
 # model.learning_rate = 5e-4
 
 for i in range(EPOCHS):
-    model.learn(total_timesteps=4000, progress_bar=True, log_interval=4)
+    model.learn(total_timesteps=4000, log_interval=4)
     model.save("models/push_" + str((i+1)*10)+"_episodes")
 
     # Retrieve the episode rewards from the monitor
