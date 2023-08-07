@@ -161,6 +161,6 @@ class PushEnv(gym.Env):
         distA = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
         distB = np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
 
-        reward = 0.4 * distA + 0.6 * distB
+        reward = 0.1 * distA + 0.9 * distB
 
         return -reward * reward

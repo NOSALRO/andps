@@ -15,7 +15,7 @@ push_env = PushEnv(enable_graphics=False,
 push_env.reset()
 
 push_env = Monitor(push_env)
-model = algo(SACDensePolicy, push_env, verbose=0, learning_rate=1e-3, train_freq=1,
+model = algo(SACDensePolicy, push_env, verbose=0, learning_rate=5e-4, train_freq=1,
              gradient_steps=-1, batch_size=2048, action_noise=NormalActionNoise(0., 1.))
 
 # model = algo("MlpPolicy", env, verbose=1
