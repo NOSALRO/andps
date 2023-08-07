@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot name="table">
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="30"/>
+            <inertia ixx="3.725"  ixy="0"  ixz="0" iyy="3.725" iyz="0" izz="3.725" />
+        </inertial>
+
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="table_3.dae" scale="1 1 1" />
+            </geometry>
+        </visual>
+
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="table.stl" scale="1 1 1" />
+            </geometry>
+        </collision>
+    </link>
+</robot>
