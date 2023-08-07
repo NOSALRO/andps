@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 EPOCHS = 10000
 MAX_STEPS = 400
 
-push_env = PushEnv(enable_graphics=True,
-                   enable_record=False, seed=-1, dt=0.01)
+push_env = PushEnv(enable_graphics=False,
+                   enable_record=False, seed=-1, dt=0.01, max_steps=MAX_STEPS)
 push_env.reset()
 
 push_env = Monitor(push_env)
-model = algo(SACDensePolicy, push_env, verbose=1, learning_rate=5e-4, train_freq=MAX_STEPS//4,
-             gradient_steps=-1, batch_size=1024, action_noise=NormalActionNoise(0., 1.))
+model = algo(SACDensePolicy, push_env, verbose=0, learning_rate=1e-3, train_freq=1,
+             gradient_steps=-1, batch_size=2048, action_noise=NormalActionNoise(0., 1.))
 
 # model = algo("MlpPolicy", env, verbose=1
 # model = algo.load("cereal_killer")
@@ -24,8 +24,8 @@ model = algo(SACDensePolicy, push_env, verbose=1, learning_rate=5e-4, train_freq
 # model.learning_rate = 5e-4
 
 for i in range(EPOCHS):
-    model.learn(total_timesteps=4000, progress_bar=True, log_interval=4)
-    model.save("models/push_" + str((i+1)*10)+"_episodes")
+    model.learn(total_timesteps=4000)
+    model.save("models/push_trained")
 
     # Retrieve the episode rewards from the monitor
     episode_rewards = np.array(push_env.get_episode_rewards())
@@ -37,6 +37,7 @@ for i in range(EPOCHS):
     plt.ylabel('Episode Reward')
     plt.title('SAC Learning Curve')
     plt.savefig("plots/sac_learning_curve.png")
+    plt.close()
 
 
 # Eval

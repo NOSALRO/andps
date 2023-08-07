@@ -5,14 +5,12 @@ import RobotDART as rd
 import copy
 from utils import PIDTask as PID, damped_pseudoinverse
 
-MAX_STEPS = 400
-
 
 class PushEnv(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, enable_graphics=True, enable_record=True, seed=-1, dt=0.01):
+    def __init__(self, enable_graphics=True, enable_record=True, seed=-1, dt=0.01, max_steps = 400):
 
         self.setup_simu(dt)
         if (enable_graphics):
@@ -21,7 +19,7 @@ class PushEnv(gym.Env):
 
         self.seed = seed
         self.it = 1
-        self.max_steps = MAX_STEPS
+        self.max_steps = max_steps
 
         # define action space
         self.action_space = gym.spaces.Box(low=np.array(
