@@ -20,7 +20,7 @@ class PushEnv(gym.Env):
         self.setup_env()
 
         self.seed = seed
-        self.it = 0
+        self.it = 1
         self.max_steps = MAX_STEPS
 
         # define action space
@@ -49,9 +49,9 @@ class PushEnv(gym.Env):
         reward = self.calc_reward()
         done = False
         # print("Step: ", str(self.it), "Out Of: ", str(self.max_steps), "Reward: ", str(reward))
-        if (self.it == self.max_steps) or any(observation > self.high_bounds) or any(observation < self.low_bounds):
+        if (self.it == self.max_steps):
             done = True
-            self.it = -1
+            self.it = 0
         self.it += 1
 
         return observation, reward, done, {}
@@ -156,8 +156,13 @@ class PushEnv(gym.Env):
 
     def calc_reward(self):
         reward = 0
-
+        # The reward will account both for the distance of the end effector to the star
+        # and the star to the target
         # get distance from star to target
-        reward = np.linalg.norm(self.box.base_pose(
-        ).translation() - self.target.base_pose().translation())
+
+        distA = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
+        distB = np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
+
+        reward = 0.4 * distA + 0.6 * distB
+
         return -reward * reward

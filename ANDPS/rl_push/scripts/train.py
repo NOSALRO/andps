@@ -1,26 +1,45 @@
 from env import PushEnv
+from stable_baselines3.common.monitor import Monitor
 
 from stable_baselines3 import SAC as algo
 from stable_baselines3.common.noise import NormalActionNoise
 from utils import SACDensePolicy
 import numpy as np
+import matplotlib.pyplot as plt
 
-EPOCHS = 1000
+EPOCHS = 10000
+MAX_STEPS = 400
 
-
-push_env = PushEnv(enable_graphics=False,
+push_env = PushEnv(enable_graphics=True,
                    enable_record=False, seed=-1, dt=0.01)
 push_env.reset()
 
-model = algo(SACDensePolicy, push_env, verbose=1, learning_rate=0.001)
-# model = algo("MlpPolicy", env, verbose=1, learning_rate=5e-4, train_freq=MAX_STEPS, gradient_steps=200, batch_size=256, learning_starts=256, action_noise=NormalActionNoise(0., 1.))
+push_env = Monitor(push_env)
+model = algo(SACDensePolicy, push_env, verbose=1, learning_rate=5e-4, train_freq=MAX_STEPS//4,
+             gradient_steps=-1, batch_size=1024, action_noise=NormalActionNoise(0., 1.))
+
+# model = algo("MlpPolicy", env, verbose=1
 # model = algo.load("cereal_killer")
 # model.set_env(env)
 # model.learning_rate = 5e-4
-model.learn(total_timesteps=400 * EPOCHS)
-model.save("cereal_killer")
+
+for i in range(EPOCHS):
+    model.learn(total_timesteps=4000, progress_bar=True, log_interval=4)
+    model.save("models/push_" + str((i+1)*10)+"_episodes")
+
+    # Retrieve the episode rewards from the monitor
+    episode_rewards = np.array(push_env.get_episode_rewards())
+
+    # Plot the learning curve
+    plt.plot(np.arange(1, len(episode_rewards)+1), episode_rewards)
+    # plt.hlines(0, 0, len(episode_rewards)+1, linestyles='dashed')
+    plt.xlabel('Episodes')
+    plt.ylabel('Episode Reward')
+    plt.title('SAC Learning Curve')
+    plt.savefig("plots/sac_learning_curve.png")
 
 
+# Eval
 obs = push_env.reset()
 for i in range(push_env.max_steps):
     action, _state = model.predict(obs, deterministic=True)
