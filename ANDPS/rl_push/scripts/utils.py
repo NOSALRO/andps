@@ -82,13 +82,13 @@ class ActorAndps(nn.Module):
             [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
 
         for i in range(N):
-            geoth.positive_semidefinite(self.all_params_B_A[i])
+            geotorch.positive_semidefinite(self.all_params_B_A[i])
 
         self.all_params_C_A = nn.ModuleList(
             [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
 
         for i in range(N):
-            geoth.skew(self.all_params_C_A[i])
+            geotorch.skew(self.all_params_C_A[i])
 
         self.all_weights = nn.Sequential(
             nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))

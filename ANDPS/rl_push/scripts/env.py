@@ -57,6 +57,9 @@ class PushEnv(gym.Env):
             plt.xlim(-1.5, 1.5)
             plt.ylim(-1, 1)
             plt.savefig("plots/traj.png")
+            plt.close()
+            plt.cla()
+            plt.clf()
             self.traj = []
         self.it += 1
 
