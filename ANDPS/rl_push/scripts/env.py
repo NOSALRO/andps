@@ -23,14 +23,10 @@ class PushEnv(gym.Env):
         self.max_steps = max_steps
 
         # define action space
-        self.action_space = gym.spaces.Box(low=np.array(
-            [-1, -1, -1], dtype=np.float32), high=np.array([1, 1, 1], dtype=np.float32), shape=(3,), dtype=np.float32)
-        self.low_bounds = np.array([self.table.base_pose().translation()[0]-1.5, self.table.base_pose(
-        ).translation()[1]-1., self.table.base_pose().translation()[2]+0.45], dtype=np.float32)
-        self.high_bounds = np.array([self.table.base_pose().translation()[0]+1.5, self.table.base_pose(
-        ).translation()[1]+1., self.robot.body_pose("iiwa_link_ee").translation()[2]+1.], dtype=np.float32)
-        self.observation_space = gym.spaces.Box(
-            low=self.low_bounds, high=self.high_bounds, shape=(3,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=np.array([-2., -2., -2.], dtype=np.float32), high=np.array([2., 2., 2.], dtype=np.float32), shape=(3,), dtype=np.float32)
+        self.low_bounds = np.array([self.table.base_pose().translation()[0]-3., self.table.base_pose().translation()[1]-3., self.table.base_pose().translation()[2]-0.1], dtype=np.float32)
+        self.high_bounds = np.array([self.table.base_pose().translation()[0]+3., self.table.base_pose().translation()[1]+3., self.robot.body_pose("iiwa_link_ee").translation()[2]+3.], dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=self.low_bounds, high=self.high_bounds, shape=(3,), dtype=np.float32)
         self.traj = []
     def step(self, action):
         # action is the 3D cartesian velocity of the end effector, we keep the orientation fixed with a PID controller
