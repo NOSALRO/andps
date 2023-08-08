@@ -161,13 +161,10 @@ class PushEnv(gym.Env):
 
     def calc_reward(self):
         reward = 0
-        # The reward will account both for the distance of the end effector to the star
-        # and the star to the target
-        # get distance from star to target
 
-        distA = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
-        distB = np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
+        star_to_center = np.linalg.norm(self.box.base_pose().translation()[:2] - self.target.base_pose().translation()[:2])
+        box_to_star = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
 
-        reward = 0.1 * distA + distB
+        reward = - star_to_center - 0.1 * box_to_star
 
-        return -reward * reward
+        return reward

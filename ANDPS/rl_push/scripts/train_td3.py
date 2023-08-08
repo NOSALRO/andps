@@ -13,7 +13,7 @@ from env import PushEnv
 
 
 def eval_policy(policy, env_name, seed, eval_episodes=2):
-	eval_env = PushEnv(enable_graphics=True, enable_record=False, seed=seed+100)
+	eval_env = PushEnv(enable_graphics=False, enable_record=False, seed=seed+100)
 
 	avg_reward = 0.
 	for _ in range(eval_episodes):
