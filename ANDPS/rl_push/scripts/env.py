@@ -136,7 +136,7 @@ class PushEnv(gym.Env):
 
     def reset_target(self):
         target_tf = dartpy.math.Isometry3()
-        target_tf.set_translation([0.2, 0.2, 1.8])
+        target_tf.set_translation([0.2, 0.2, 1.1])
         self.target.set_base_pose(target_tf)
 
     def setup_env(self):
@@ -163,8 +163,10 @@ class PushEnv(gym.Env):
         # star_to_center = np.linalg.norm(self.box.base_pose().translation()[:2] - self.target.base_pose().translation()[:2])
         # box_to_star = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
 
-
         reach_target = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.target.base_pose().translation())
-        reward =  -reach_target
+
+        # minimize velocity
+        vel = self.robot.body_velocity(self.eef_link_name)[3:]
+        reward =  -reach_target - np.linalg.norm(vel)
 
         return reward
