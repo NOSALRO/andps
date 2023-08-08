@@ -13,7 +13,7 @@ from env import PushEnv
 
 
 def eval_policy(policy, env_name, seed, eval_episodes=2):
-	eval_env = PushEnv(enable_graphics=True, enable_record=False, seed=seed+100)
+	eval_env = PushEnv(enable_graphics=False, enable_record=False, seed=seed+100)
 
 	avg_reward = 0.
 	for _ in range(eval_episodes):
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     # Max time steps to run environment
     parser.add_argument("--max_timesteps", default=1e6, type=int)
     # Std of Gaussian exploration noise
-    parser.add_argument("--expl_noise", default=0.4, type=float)
+    parser.add_argument("--expl_noise", default=0.1, type=float)
     # Batch size for both actor and critic
     parser.add_argument("--batch_size", default=256, type=int)
     parser.add_argument("--discount", default=0.99,

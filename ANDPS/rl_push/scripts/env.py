@@ -57,7 +57,7 @@ class PushEnv(gym.Env):
             plt.xlim(-1.5, 1.5)
             plt.ylim(-1, 1)
             plt.savefig("plots/traj.png")
-            # self.traj = []
+            self.traj = []
         self.it += 1
 
         return observation, reward, done, {}
@@ -169,6 +169,6 @@ class PushEnv(gym.Env):
         distA = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
         distB = np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
 
-        reward = distB
+        reward = 0.1 * distA + distB
 
         return -reward * reward
