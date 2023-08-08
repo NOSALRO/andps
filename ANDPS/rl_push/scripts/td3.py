@@ -109,7 +109,7 @@ class TD3(object):
         policy_freq=2
     ):
 
-        N = 5
+        N = 1
         # self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor = ActorAndps(state_dim, N).to(device)
 
