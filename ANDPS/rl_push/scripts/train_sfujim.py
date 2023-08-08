@@ -6,6 +6,7 @@ import os
 import matplotlib.pyplot as plt
 import utils
 import td3
+import ddpg
 from env import PushEnv
 
 # Runs policy for X episodes and returns average reward
@@ -13,27 +14,28 @@ from env import PushEnv
 
 
 def eval_policy(policy, env_name, seed, eval_episodes=2):
-	eval_env = PushEnv(enable_graphics=False, enable_record=False, seed=seed+100)
+    eval_env = PushEnv(enable_graphics=True, enable_record=False, seed=seed+100)
 
-	avg_reward = 0.
-	for _ in range(eval_episodes):
-		state, done = eval_env.reset(), False
-		while not done:
-			action = policy.select_action(np.array(state))
-			state, reward, done, _ = eval_env.step(action)
-			avg_reward += reward
+    avg_reward = 0.
+    for _ in range(eval_episodes):
+        state, done = eval_env.reset(), False
+        while not done:
+            action = policy.select_action(np.array(state))
+            state, reward, done, _ = eval_env.step(action)
+            avg_reward += reward
 
-	avg_reward /= eval_episodes
+    avg_reward /= eval_episodes
 
-	print("---------------------------------------")
-	print(f"Evaluation over {eval_episodes} episodes: {avg_reward:.3f}")
-	print("---------------------------------------")
-	return avg_reward
+    print("---------------------------------------")
+    print(f"Evaluation over {eval_episodes} episodes: {avg_reward:.3f}")
+    print("---------------------------------------")
+    return avg_reward
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--policy", default="DDPG")
     # OpenAI gym environment name
     parser.add_argument("--env", default="PushEnv")
     # Sets Gym, PyTorch and Numpy seeds
@@ -64,9 +66,10 @@ if __name__ == "__main__":
     parser.add_argument("--load_model", default="")
     args = parser.parse_args()
 
-    file_name = f"td3_{args.env}_{args.seed}"
+
+    file_name = f"{args.policy}_{args.env}_{args.seed}"
     print("---------------------------------------")
-    print(f"Policy: td3, Env: {args.env}, Seed: {args.seed}")
+    print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
     print("---------------------------------------")
 
     if not os.path.exists("./results"):
@@ -77,7 +80,7 @@ if __name__ == "__main__":
 
     env = PushEnv(enable_graphics=False, enable_record=False, seed=args.seed)
 
-	# Set seeds
+    # Set seeds
     env.action_space.seed(args.seed)
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -92,17 +95,20 @@ if __name__ == "__main__":
         "max_action": max_action,
         "discount": args.discount,
         "tau": args.tau}
-
-    kwargs["policy_noise"] = args.policy_noise * max_action
-    kwargs["noise_clip"] = args.noise_clip * max_action
-    kwargs["policy_freq"] = args.policy_freq
-
-    policy = td3.TD3(**kwargs)
+# Initialize policy
+    if args.policy == "TD3":
+        # Target policy smoothing is scaled wrt the action scale
+        kwargs["policy_noise"] = args.policy_noise * max_action
+        kwargs["noise_clip"] = args.noise_clip * max_action
+        kwargs["policy_freq"] = args.policy_freq
+        policy = td3.TD3(**kwargs)
+    elif args.policy == "DDPG":
+        policy = ddpg.DDPG(**kwargs)
 
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
 
-	# Evaluate untrained policy
+    # Evaluate untrained policy
     evaluations = [eval_policy(policy, args.env, args.seed)]
 
     state, done = env.reset(), False
