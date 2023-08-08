@@ -3,6 +3,7 @@ import gym
 import dartpy
 import RobotDART as rd
 import copy
+import matplotlib.pyplot as plt
 from utils import PIDTask as PID, damped_pseudoinverse
 
 
@@ -30,7 +31,7 @@ class PushEnv(gym.Env):
         ).translation()[1]+1., self.robot.body_pose("iiwa_link_ee").translation()[2]+1.], dtype=np.float32)
         self.observation_space = gym.spaces.Box(
             low=self.low_bounds, high=self.high_bounds, shape=(3,), dtype=np.float32)
-
+        self.traj = []
     def step(self, action):
         # action is the 3D cartesian velocity of the end effector, we keep the orientation fixed with a PID controller
         vel_rot = self.controller.update(
@@ -42,7 +43,7 @@ class PushEnv(gym.Env):
         cmd = jac_pinv @ vel
         self.robot.set_commands(cmd)
         self.simu.step_world()
-
+        self.traj.append(self.box.base_pose().translation())
         observation = self.get_state()
         reward = self.calc_reward()
         done = False
@@ -50,6 +51,13 @@ class PushEnv(gym.Env):
         if (self.it == self.max_steps):
             done = True
             self.it = 0
+            plt.scatter(np.array(self.traj)[:, 0], np.array(self.traj)[:, 1],  c="y", marker="*")
+            plt.scatter(self.target.base_pose().translation()[0], self.target.base_pose().translation()[1], c="g")
+            # set fixed x and y limits
+            plt.xlim(-1.5, 1.5)
+            plt.ylim(-1, 1)
+            plt.savefig("plots/traj.png")
+            # self.traj = []
         self.it += 1
 
         return observation, reward, done, {}
@@ -117,12 +125,12 @@ class PushEnv(gym.Env):
     def setup_star(self):
         box_packages = [("star", "robots/star")]
         self.box = rd.Robot("robots/star/star.urdf",   box_packages, "star")
-        self.box.set_base_pose([0., 0., 0.5,  0., 0., 0.8])
+        self.box.set_base_pose([0., 0., 0.5,  0., 0., 0.78])
         self.simu.add_robot(self.box)
 
     def reset_star(self):
         self.box.reset()
-        self.box.set_base_pose([0., 0., 0.5,  0., 0., 0.8])
+        self.box.set_base_pose([0., 0., 0.5,  0., 0., 0.78])
 
     def setup_target(self):
         self.target = rd.Robot.create_ellipsoid([0.25, 0.25, 0.001], [
@@ -161,6 +169,6 @@ class PushEnv(gym.Env):
         distA = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
         distB = np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
 
-        reward = 0.1 * distA + 0.9 * distB
+        reward = distB
 
         return -reward * reward

@@ -82,13 +82,13 @@ class ActorAndps(nn.Module):
             [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
 
         for i in range(N):
-            geotorch.positive_semidefinite(self.all_params_B_A[i])
+            geoth.positive_semidefinite(self.all_params_B_A[i])
 
         self.all_params_C_A = nn.ModuleList(
             [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
 
         for i in range(N):
-            geotorch.skew(self.all_params_C_A[i])
+            geoth.skew(self.all_params_C_A[i])
 
         self.all_weights = nn.Sequential(
             nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
@@ -413,3 +413,40 @@ class SACDensePolicy(SACPolicy):
 
     def _predict(self, observation: th.Tensor, deterministic: bool = False) -> th.Tensor:
         return self.actor(observation, deterministic)
+
+
+class ReplayBuffer(object):
+    def __init__(self, state_dim, action_dim, max_size=int(1e6)):
+        self.max_size = max_size
+        self.ptr = 0
+        self.size = 0
+
+        self.state = np.zeros((max_size, state_dim))
+        self.action = np.zeros((max_size, action_dim))
+        self.next_state = np.zeros((max_size, state_dim))
+        self.reward = np.zeros((max_size, 1))
+        self.not_done = np.zeros((max_size, 1))
+
+        self.device = th.device(
+            "cuda" if th.cuda.is_available() else "cpu")
+
+    def add(self, state, action, next_state, reward, done):
+        self.state[self.ptr] = state
+        self.action[self.ptr] = action
+        self.next_state[self.ptr] = next_state
+        self.reward[self.ptr] = reward
+        self.not_done[self.ptr] = 1. - done
+
+        self.ptr = (self.ptr + 1) % self.max_size
+        self.size = min(self.size + 1, self.max_size)
+
+    def sample(self, batch_size):
+        ind = np.random.randint(0, self.size, size=batch_size)
+
+        return (
+            th.FloatTensor(self.state[ind]).to(self.device),
+            th.FloatTensor(self.action[ind]).to(self.device),
+            th.FloatTensor(self.next_state[ind]).to(self.device),
+            th.FloatTensor(self.reward[ind]).to(self.device),
+            th.FloatTensor(self.not_done[ind]).to(self.device)
+        )
