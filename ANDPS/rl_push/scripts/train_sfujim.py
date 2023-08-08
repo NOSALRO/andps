@@ -35,7 +35,7 @@ def eval_policy(policy, env_name, seed, eval_episodes=2):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policy", default="TD3")
+    parser.add_argument("--policy", default="DDPG")
     # OpenAI gym environment name
     parser.add_argument("--env", default="PushEnv")
     # Sets Gym, PyTorch and Numpy seeds
@@ -47,17 +47,17 @@ if __name__ == "__main__":
     # Max time steps to run environment
     parser.add_argument("--max_timesteps", default=400 * 1000, type=int)
     # Std of Gaussian exploration noise
-    parser.add_argument("--expl_noise", default=0.4, type=float)
+    parser.add_argument("--expl_noise", default=0.1, type=float)
     # Batch size for both actor and critic
-    parser.add_argument("--batch_size", default=1028, type=int)
-    parser.add_argument("--discount", default=0.9,
+    parser.add_argument("--batch_size", default=256, type=int)
+    parser.add_argument("--discount", default=0.99,
                         type=float)     # Discount factor
     # Target network update rate
     parser.add_argument("--tau", default=0.005, type=float)
     # Noise added to target policy during critic update
-    parser.add_argument("--policy_noise", default=0.4)
+    parser.add_argument("--policy_noise", default=0.1)
     # Range to clip target policy noise
-    parser.add_argument("--noise_clip", default=0.1)
+    parser.add_argument("--noise_clip", default=0.5)
     # Frequency of delayed policy updates
     parser.add_argument("--policy_freq", default=2, type=int)
     # Save model and optimizer parameters
@@ -145,7 +145,7 @@ if __name__ == "__main__":
             policy.train(replay_buffer, args.batch_size)
 
         if done:
-            print("Target: ", policy.actor.x_tar)
+            # print("Target: ", policy.actor.x_tar)
 
 
             # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True

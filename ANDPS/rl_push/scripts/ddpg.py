@@ -79,20 +79,20 @@ class Critic(nn.Module):
 class DDPG(object):
     def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005):
         N = 4
-        # self.actor = Actor(state_dim, action_dim, max_action).to(device)
-        self.actor = ActorAndps(state_dim, N).to(device)
+        self.actor = Actor(state_dim, action_dim, max_action).to(device)
+        # self.actor = ActorAndps(state_dim, N).to(device)
 
         # Save the parameters using state_dict
         actor_state_dict = self.actor.state_dict()
 
         # Load the parameters using the state_dict
-        self.actor_target = ActorAndps(state_dim, N).to(device)
+        self.actor_target = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target.load_state_dict(actor_state_dict)
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=1e-3)
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=5e-4)
 
         self.critic = Critic(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=1e-3)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=5e-4)
 
         self.discount = discount
         self.tau = tau

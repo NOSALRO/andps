@@ -130,13 +130,13 @@ class PushEnv(gym.Env):
         self.box.set_base_pose([0., 0., 0.5,  0., 0., 0.78])
 
     def setup_target(self):
-        self.target = rd.Robot.create_ellipsoid([0.25, 0.25, 0.001], [
+        self.target = rd.Robot.create_ellipsoid([0.25, 0.25, 0.025], [
             0., 0., 0., 0.5, 0.5, 0.8], "fixed", mass=0.01, color=[0.0, 1.0, 0.0, 0.5], ellipsoid_name="target")
         self.simu.add_visual_robot(self.target)
 
     def reset_target(self):
         target_tf = dartpy.math.Isometry3()
-        target_tf.set_translation([0., 0.5, 0.8])
+        target_tf.set_translation([0.2, 0.2, 1.8])
         self.target.set_base_pose(target_tf)
 
     def setup_env(self):
@@ -160,9 +160,11 @@ class PushEnv(gym.Env):
     def calc_reward(self):
         reward = 0
 
-        star_to_center = np.linalg.norm(self.box.base_pose().translation()[:2] - self.target.base_pose().translation()[:2])
-        box_to_star = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
+        # star_to_center = np.linalg.norm(self.box.base_pose().translation()[:2] - self.target.base_pose().translation()[:2])
+        # box_to_star = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
 
-        reward = - star_to_center - 0.1 * box_to_star
+
+        reach_target = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.target.base_pose().translation())
+        reward =  -reach_target
 
         return reward
