@@ -117,7 +117,7 @@ class TD3(object):
         actor_state_dict = self.actor.state_dict()
 
         # Load the parameters using the state_dict
-        self.actor_target = ActorAndps(state_dim, N)
+        self.actor_target = ActorAndps(state_dim, N).to(device)
         self.actor_target.load_state_dict(actor_state_dict)
         self.actor_optimizer = torch.optim.Adam(
             self.actor.parameters(), lr=3e-4)
