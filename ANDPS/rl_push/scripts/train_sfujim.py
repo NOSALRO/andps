@@ -78,7 +78,7 @@ if __name__ == "__main__":
     if args.save_model and not os.path.exists("./models"):
        os.makedirs("./models")
 
-    env = PushEnv(enable_graphics=True, enable_record=False, seed=args.seed)
+    env = PushEnv(enable_graphics=False, enable_record=False, seed=args.seed)
 
     # Set seeds
     env.action_space.seed(args.seed)

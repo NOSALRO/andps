@@ -167,6 +167,6 @@ class PushEnv(gym.Env):
 
         # minimize velocity
         vel = self.robot.body_velocity(self.eef_link_name)[3:]
-        reward =  -reach_target - np.linalg.norm(vel)
+        reward =  -reach_target - 0.1 * np.linalg.norm(vel)
 
         return reward
