@@ -30,17 +30,15 @@ class PushEnv(gym.Env):
         self.traj = []
     def step(self, action):
         # action is the 3D cartesian velocity of the end effector, we keep the orientation fixed with a PID controller
-        vel_rot = self.controller.update(
-            self.robot.body_pose(self.eef_link_name))[0][:3]
+        vel_rot = self.controller.update(self.robot.body_pose(self.eef_link_name))[0][:3]
 
         vel = np.concatenate((vel_rot, action))
-        jac_pinv = damped_pseudoinverse(
-            self.robot.jacobian(self.eef_link_name))
+        jac_pinv = damped_pseudoinverse(self.robot.jacobian(self.eef_link_name))
         cmd = jac_pinv @ vel
         self.robot.set_commands(cmd)
         self.simu.step_world()
-        self.traj.append(self.box.base_pose().translation())
-        observation = self.get_state()
+        self.traj.append(copy.copy(self.box.base_pose().translation()))
+        observation = copy.copy(self.get_state())
         reward = self.calc_reward()
         done = False
         # print("Step: ", str(self.it), "Out Of: ", str(self.max_steps), "Reward: ", str(reward))

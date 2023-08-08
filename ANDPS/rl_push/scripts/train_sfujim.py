@@ -40,22 +40,22 @@ if __name__ == "__main__":
     parser.add_argument("--env", default="PushEnv")
     # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--seed", default=0, type=int)
-    # Time steps initial random policy is used
-    parser.add_argument("--start_timesteps", default=25e3, type=int)
+    # Time steps initial random policy is used.
+    parser.add_argument("--start_timesteps", default=400 * 100, type=int)
     # How often (time steps) we evaluate
-    parser.add_argument("--eval_freq", default=5e3, type=int)
+    parser.add_argument("--eval_freq", default= 400 * 10, type=int)
     # Max time steps to run environment
-    parser.add_argument("--max_timesteps", default=1e6, type=int)
+    parser.add_argument("--max_timesteps", default=400 * 1000, type=int)
     # Std of Gaussian exploration noise
-    parser.add_argument("--expl_noise", default=0.1, type=float)
+    parser.add_argument("--expl_noise", default=0.4, type=float)
     # Batch size for both actor and critic
-    parser.add_argument("--batch_size", default=256, type=int)
+    parser.add_argument("--batch_size", default=1028, type=int)
     parser.add_argument("--discount", default=0.99,
                         type=float)     # Discount factor
     # Target network update rate
     parser.add_argument("--tau", default=0.005, type=float)
     # Noise added to target policy during critic update
-    parser.add_argument("--policy_noise", default=0.2)
+    parser.add_argument("--policy_noise", default=0.1)
     # Range to clip target policy noise
     parser.add_argument("--noise_clip", default=0.5)
     # Frequency of delayed policy updates
