@@ -416,7 +416,7 @@ class SACDensePolicy(SACPolicy):
 
 
 class ReplayBuffer(object):
-    def __init__(self, state_dim, action_dim, max_size=int(1e6)):
+    def __init__(self, state_dim, action_dim, max_size=int(2e5)):
         self.max_size = max_size
         self.ptr = 0
         self.size = 0

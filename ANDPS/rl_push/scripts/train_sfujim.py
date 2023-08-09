@@ -41,15 +41,15 @@ if __name__ == "__main__":
     # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--seed", default=0, type=int)
     # Time steps initial random policy is used.
-    parser.add_argument("--start_timesteps", default=MAX_STEPS * 1000, type=int)
+    parser.add_argument("--start_timesteps", default=MAX_STEPS * 5000, type=int)
     # How often (time steps) we evaluate
     parser.add_argument("--eval_freq", default=MAX_STEPS * 100, type=int)
     # Max time steps to run environment
-    parser.add_argument("--max_timesteps", default=MAX_STEPS * 10000, type=int)
+    parser.add_argument("--max_timesteps", default=MAX_STEPS * 100000, type=int)
     # Std of Gaussian exploration noise
-    parser.add_argument("--expl_noise", default=0.1, type=float)
+    parser.add_argument("--expl_noise", default=0.2, type=float)
     # Batch size for both actor and critic
-    parser.add_argument("--batch_size", default=1024, type=int)
+    parser.add_argument("--batch_size", default=64, type=int)
     parser.add_argument("--discount", default=0.99,
                         type=float)     # Discount factor
     # Target network update rate

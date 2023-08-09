@@ -32,7 +32,7 @@ class ActorAndps(nn.Module):
             geotorch.skew(self.all_params_C_A[i])
 
         self.all_weights = nn.Sequential(
-            nn.Linear(self.ds_dim, 10), nn.ReLU(), nn.Linear(10, N), nn.Softmax(dim=1))
+            nn.Linear(self.ds_dim, 64), nn.ReLU(), nn.Linear(64, N), nn.Softmax(dim=1))
         self.x_tar = nn.Parameter(torch.randn(self.ds_dim))  # .to(device)
 
     def forward(self, x, ):
@@ -120,12 +120,12 @@ class TD3(object):
         self.actor_target = ActorAndps(state_dim, N).to(device)
         self.actor_target.load_state_dict(actor_state_dict)
         self.actor_optimizer = torch.optim.Adam(
-            self.actor.parameters(), lr=3e-4)
+            self.actor.parameters(), lr=5e-4)
 
         self.critic = Critic(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(
-            self.critic.parameters(), lr=3e-4)
+            self.critic.parameters(), lr=1e-3)
 
         self.max_action = max_action
         self.discount = discount
