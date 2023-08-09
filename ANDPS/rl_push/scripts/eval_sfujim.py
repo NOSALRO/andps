@@ -13,7 +13,9 @@ from env import PushEnv
 # A fixed seed is used for the eval environment
 
 
-def eval_policy(policy, env_name, seed, eval_episodes=2):
+def eval_policy(policy, env_name, seed, eval_episodes=10):
+    if eval_episodes == 0:
+        return 0
     eval_env = PushEnv(enable_graphics=True, enable_record=True, seed=seed+100)
 
     avg_reward = 0.

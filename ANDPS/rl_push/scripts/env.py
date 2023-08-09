@@ -28,6 +28,10 @@ class PushEnv(gym.Env):
         self.high_bounds = np.array([self.table.base_pose().translation()[0]+3., self.table.base_pose().translation()[1]+3., self.robot.body_pose("iiwa_link_ee").translation()[2]+3.], dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=self.low_bounds, high=self.high_bounds, shape=(3,), dtype=np.float32)
         self.traj = []
+        self.episode_rewards = []
+        self.rewards_vel = []
+        self.rewards_eef = []
+        self.rewards_star = []
     def step(self, action):
         # action is the 3D cartesian velocity of the end effector, we keep the orientation fixed with a PID controller
         vel_rot = self.controller.update(self.robot.body_pose(self.eef_link_name))[0][:3]
@@ -40,21 +44,27 @@ class PushEnv(gym.Env):
         self.traj.append(copy.copy(self.box.base_pose().translation()))
         observation = copy.copy(self.get_state())
         reward = self.calc_reward()
+        self.episode_rewards.append(reward)
         done = False
         # print("Step: ", str(self.it), "Out Of: ", str(self.max_steps), "Reward: ", str(reward))
         if (self.it == self.max_steps):
             done = True
             self.it = 0
-            plt.scatter(np.array(self.traj)[:, 0], np.array(self.traj)[:, 1],  c="y", marker="*")
-            plt.scatter(self.target.base_pose().translation()[0], self.target.base_pose().translation()[1], c="g")
-            # set fixed x and y limits
-            plt.xlim(-1.5, 1.5)
-            plt.ylim(-1, 1)
-            plt.savefig("plots/traj.png")
+            plt.plot(self.episode_rewards, label="total_reward")
+            plt.plot(self.rewards_vel, label="vel_reward")
+            plt.plot(self.rewards_eef, label="eef_reward")
+            plt.plot(self.rewards_star, label="star_reward")
+            plt.legend()
+            plt.savefig("plots/rewards.png")
             plt.close()
             plt.cla()
             plt.clf()
             self.traj = []
+            self.episode_rewards = []
+            self.rewards_eef = []
+            self.rewards_vel = []
+            self.rewards_star = []
+
         self.it += 1
 
         return observation, reward, done, {}
@@ -110,8 +120,9 @@ class PushEnv(gym.Env):
         self.robot.reset()
         init_positions = copy.copy(self.robot.positions())
         # init_positions[0] = -2.
-        init_positions[3] = -np.pi / 2.0
-        init_positions[5] = np.pi / 2.0
+        init_positions[2] = np.random.uniform(-np.pi/2, np.pi/2)
+        init_positions[3] = np.random.uniform(-np.pi/2, np.pi/2)
+        init_positions[5] = np.random.uniform(-np.pi/2, np.pi/2)
         self.robot.set_positions(init_positions)
         Kp = np.array([20., 20., 20., 10., 10., 10.])
         Kd = Kp * 0.01
@@ -158,15 +169,15 @@ class PushEnv(gym.Env):
         return self.get_state()
 
     def calc_reward(self):
-        reward = 0
 
-        # star_to_center = np.linalg.norm(self.box.base_pose().translation()[:2] - self.target.base_pose().translation()[:2])
-        # box_to_star = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
+        star_to_center = -10 * np.linalg.norm(self.box.base_pose().translation()[:2] - self.target.base_pose().translation()[:2])
+        eef_to_star = -0.2 * np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
+        vel = -0.1 * np.linalg.norm(self.robot.body_velocity(self.eef_link_name)[3:])
 
-        reach_target = np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.target.base_pose().translation())
+        self.rewards_eef.append(eef_to_star)
+        self.rewards_vel.append(vel)
+        self.rewards_star.append(star_to_center)
 
-        # minimize velocity
-        vel = self.robot.body_velocity(self.eef_link_name)[3:]
-        reward =  -reach_target - 0.1 * np.linalg.norm(vel)
+        reward = star_to_center + eef_to_star + vel
 
         return reward
