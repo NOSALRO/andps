@@ -155,7 +155,7 @@ if __name__ == "__main__":
             plt.plot(rewards, label='Reward per episode', color='slateblue')
             # plot horizontal line at NO_EXPLORE_EPISODES
             plt.axvline(x=NO_EXPLORE_EPISODES, color='darkorange', linestyle='--', label='Exploration')
-            plt.ylim(-500., 0.)
+            plt.ylim(0., 200.)
             plt.ylabel('Episode Reward')
             plt.xlabel('Episode')
             plt.title(f"Policy: {args.policy} ")
