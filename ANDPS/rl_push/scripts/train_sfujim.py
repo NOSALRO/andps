@@ -13,6 +13,7 @@ from env import PushEnv
 # A fixed seed is used for the eval environment
 
 MAX_STEPS = 500
+NO_EXPLORE_EPISODES = 1000
 def eval_policy(policy, env_name, seed, eval_episodes=2):
     eval_env = PushEnv(enable_graphics=False, enable_record=False, seed=seed+100, max_steps=MAX_STEPS)
 
@@ -41,15 +42,15 @@ if __name__ == "__main__":
     # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--seed", default=0, type=int)
     # Time steps initial random policy is used.
-    parser.add_argument("--start_timesteps", default=MAX_STEPS * 5000, type=int)
+    parser.add_argument("--start_timesteps", default=MAX_STEPS * NO_EXPLORE_EPISODES, type=int)
     # How often (time steps) we evaluate
     parser.add_argument("--eval_freq", default=MAX_STEPS * 100, type=int)
     # Max time steps to run environment
     parser.add_argument("--max_timesteps", default=MAX_STEPS * 100000, type=int)
     # Std of Gaussian exploration noise
-    parser.add_argument("--expl_noise", default=0.2, type=float)
+    parser.add_argument("--expl_noise", default=0.1, type=float)
     # Batch size for both actor and critic
-    parser.add_argument("--batch_size", default=64, type=int)
+    parser.add_argument("--batch_size", default=128, type=int)
     parser.add_argument("--discount", default=0.99,
                         type=float)     # Discount factor
     # Target network update rate
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     # Range to clip target policy noise
     parser.add_argument("--noise_clip", default=0.5)
     # Frequency of delayed policy updates
-    parser.add_argument("--policy_freq", default=2, type=int)
+    parser.add_argument("--policy_freq", default=1, type=int)
     # Save model and optimizer parameters
     parser.add_argument("--save_model", action="store_true")
     # Model load file name, "" doesn't load, "default" uses file_name
@@ -115,7 +116,8 @@ if __name__ == "__main__":
     episode_reward = 0
     episode_timesteps = 0
     episode_num = 0
-
+    cumulative_reward = 0
+    rewards = []
     for t in range(int(args.max_timesteps)):
 
         episode_timesteps += 1
@@ -133,7 +135,6 @@ if __name__ == "__main__":
         # Perform action
         next_state, reward, done, _ = env.step(action)
         done_bool = float(done) if episode_timesteps < env.max_steps else 0
-
         # Store data in replay buffer
         replay_buffer.add(state, action, next_state, reward, done_bool)
 
@@ -145,12 +146,27 @@ if __name__ == "__main__":
             policy.train(replay_buffer, args.batch_size)
 
         if done:
-            # print("Target: ", policy.actor.x_tar)
-
+            print("Target: ", policy.actor.x_tar)
 
             # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
             print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f} Is Training: {t >= args.start_timesteps}")
+            rewards.append(episode_reward)
             # Reset environment
+            plt.plot(rewards, label='Reward per episode', color='slateblue')
+            # plot horizontal line at NO_EXPLORE_EPISODES
+            plt.axvline(x=NO_EXPLORE_EPISODES, color='darkorange', linestyle='--', label='Exploration')
+            plt.ylim(-2000., -100.)
+            plt.ylabel('Episode Reward')
+            plt.xlabel('Episode')
+            plt.title(f"Policy: {args.policy} ")
+            plt.legend()
+            plt.grid()
+            plt.savefig(f"./plots/reward_per_episode.png")
+
+
+            plt.close()
+            plt.cla()
+            plt.clf()
             state, done = env.reset(), False
             episode_reward = 0
             episode_timesteps = 0

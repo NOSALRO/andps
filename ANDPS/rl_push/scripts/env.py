@@ -168,8 +168,7 @@ class PushEnv(gym.Env):
         return self.get_state()
 
     def calc_reward(self):
-
-        star_to_center = -10 * np.linalg.norm(self.box.base_pose().translation()[:2] - self.target.base_pose().translation()[:2])
+        star_to_center = -np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
         eef_to_star = -0.2 * np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
         vel = -0.1 * np.linalg.norm(self.robot.body_velocity(self.eef_link_name)[3:])
 
