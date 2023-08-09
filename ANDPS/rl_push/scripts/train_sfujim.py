@@ -12,9 +12,9 @@ from env import PushEnv
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
 
-
+MAX_STEPS = 500
 def eval_policy(policy, env_name, seed, eval_episodes=2):
-    eval_env = PushEnv(enable_graphics=False, enable_record=False, seed=seed+100)
+    eval_env = PushEnv(enable_graphics=False, enable_record=False, seed=seed+100, max_steps=MAX_STEPS)
 
     avg_reward = 0.
     for _ in range(eval_episodes):
@@ -41,11 +41,11 @@ if __name__ == "__main__":
     # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--seed", default=0, type=int)
     # Time steps initial random policy is used.
-    parser.add_argument("--start_timesteps", default=400 * 1000, type=int)
+    parser.add_argument("--start_timesteps", default=MAX_STEPS * 1000, type=int)
     # How often (time steps) we evaluate
-    parser.add_argument("--eval_freq", default= 400 * 100, type=int)
+    parser.add_argument("--eval_freq", default=MAX_STEPS * 100, type=int)
     # Max time steps to run environment
-    parser.add_argument("--max_timesteps", default=400 * 10000, type=int)
+    parser.add_argument("--max_timesteps", default=MAX_STEPS * 10000, type=int)
     # Std of Gaussian exploration noise
     parser.add_argument("--expl_noise", default=0.1, type=float)
     # Batch size for both actor and critic
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     if args.save_model and not os.path.exists("./models"):
        os.makedirs("./models")
 
-    env = PushEnv(enable_graphics=False, enable_record=False, seed=args.seed)
+    env = PushEnv(enable_graphics=False, enable_record=False, seed=args.seed, max_steps=MAX_STEPS)
 
     # Set seeds
     env.action_space.seed(args.seed)

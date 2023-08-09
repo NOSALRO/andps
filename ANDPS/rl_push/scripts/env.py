@@ -11,7 +11,7 @@ class PushEnv(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, enable_graphics=True, enable_record=True, seed=-1, dt=0.01, max_steps = 400):
+    def __init__(self, enable_graphics=True, enable_record=True, seed=-1, dt=0.01, max_steps = 500):
 
         self.setup_simu(dt)
         if (enable_graphics):
@@ -23,9 +23,9 @@ class PushEnv(gym.Env):
         self.max_steps = max_steps
 
         # define action space
-        self.action_space = gym.spaces.Box(low=np.array([-5., -5., -5.], dtype=np.float32), high=np.array([5., 5., 5.], dtype=np.float32), shape=(3,), dtype=np.float32)
-        self.low_bounds = np.array([self.table.base_pose().translation()[0]-3., self.table.base_pose().translation()[1]-3., self.table.base_pose().translation()[2]-0.1], dtype=np.float32)
-        self.high_bounds = np.array([self.table.base_pose().translation()[0]+3., self.table.base_pose().translation()[1]+3., self.robot.body_pose("iiwa_link_ee").translation()[2]+3.], dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=np.array([-1., -1., -1.], dtype=np.float32), high=np.array([1., 1., 1.], dtype=np.float32), shape=(3,), dtype=np.float32)
+        self.low_bounds = np.array([-2.,-2., 0.7], dtype=np.float32)
+        self.high_bounds = np.array([2., 2., 3.], dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=self.low_bounds, high=self.high_bounds, shape=(3,), dtype=np.float32)
         self.traj = []
         self.episode_rewards = []
@@ -70,7 +70,7 @@ class PushEnv(gym.Env):
         return observation, reward, done, {}
 
     def get_state(self):
-        return self.robot.body_pose(self.eef_link_name).translation()
+        return (self.robot.body_pose(self.eef_link_name).translation()).astype(np.float32)
 
     def render(self):
         print(self.get_state())
@@ -120,9 +120,8 @@ class PushEnv(gym.Env):
         self.robot.reset()
         init_positions = copy.copy(self.robot.positions())
         # init_positions[0] = -2.
-        init_positions[2] = np.random.uniform(-np.pi/2, np.pi/2)
-        init_positions[3] = np.random.uniform(-np.pi/2, np.pi/2)
-        init_positions[5] = np.random.uniform(-np.pi/2, np.pi/2)
+        init_positions[3] = -np.pi / 2.0
+        init_positions[5] = np.pi / 2.0
         self.robot.set_positions(init_positions)
         Kp = np.array([20., 20., 20., 10., 10., 10.])
         Kd = Kp * 0.01
