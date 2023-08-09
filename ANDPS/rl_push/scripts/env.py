@@ -106,7 +106,7 @@ class PushEnv(gym.Env):
         # Iiwa custom eef
         iiwa_packages = [("iiwa_description", "robots/iiwa/iiwa_description")]
         self.robot = rd.Robot("robots/iiwa/iiwa.urdf", iiwa_packages, "iiwa")
-        robot_base_pose = [0., 0., np.pi/2., 0., -0.5, 0.75]
+        robot_base_pose = [0., 0., np.pi/2., 0., -0.8, 0.75]
         self.robot.set_base_pose(robot_base_pose)
 
         self.simu.add_robot(self.robot)
@@ -121,7 +121,8 @@ class PushEnv(gym.Env):
         init_positions = copy.copy(self.robot.positions())
         # init_positions[0] = -2.
         init_positions[3] = -np.pi / 2.0
-        init_positions[5] = np.pi / 2.0
+        init_positions[5] = np.pi / 4.0
+        init_positions[1] = np.pi / 4.0
         self.robot.set_positions(init_positions)
         Kp = np.array([20., 20., 20., 10., 10., 10.])
         Kd = Kp * 0.01
@@ -132,12 +133,12 @@ class PushEnv(gym.Env):
     def setup_star(self):
         box_packages = [("star", "robots/star")]
         self.box = rd.Robot("robots/star/star.urdf",   box_packages, "star")
-        self.box.set_base_pose([0., 0., 0.5,  0., 0., 0.78])
+        self.box.set_base_pose([0., 0., 0.5,  0., -0.1, 0.78])
         self.simu.add_robot(self.box)
 
     def reset_star(self):
         self.box.reset()
-        self.box.set_base_pose([0., 0., 0.5,  0., 0., 0.78])
+        self.box.set_base_pose([0., 0., 0.5,  0., -0.1, 0.78])
 
     def setup_target(self):
         self.target = rd.Robot.create_ellipsoid([0.25, 0.25, 0.025], [
@@ -146,7 +147,7 @@ class PushEnv(gym.Env):
 
     def reset_target(self):
         target_tf = dartpy.math.Isometry3()
-        target_tf.set_translation([0.2, 0.2, 1.1])
+        target_tf.set_translation([0.2, 0.3, 0.8])
         self.target.set_base_pose(target_tf)
 
     def setup_env(self):
@@ -168,9 +169,13 @@ class PushEnv(gym.Env):
         return self.get_state()
 
     def calc_reward(self):
-        star_to_center = -np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
-        eef_to_star = -0.2 * np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
-        vel = -0.1 * np.linalg.norm(self.robot.body_velocity(self.eef_link_name)[3:])
+
+        dist = -np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
+        p = 0.2
+        star_to_center = np.exp(-0.5 * dist * dist / (p * p))
+
+        eef_to_star = -0.1 * np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
+        vel = -0.01 * np.linalg.norm(self.robot.body_velocity(self.eef_link_name)[3:])
 
         self.rewards_eef.append(eef_to_star)
         self.rewards_vel.append(vel)

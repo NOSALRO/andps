@@ -14,7 +14,7 @@ graphics.look_at([0., 3., 2.75], [0., 0., 0.75])
 # Iiwa custom eef
 iiwa_packages = [("iiwa_description", "robots/iiwa/iiwa_description")]
 robot = rd.Robot("robots/iiwa/iiwa.urdf", iiwa_packages, "iiwa")
-robot_base_pose = [0., 0., np.pi/2., 0., -0.5, 0.75]
+robot_base_pose = [0., 0., np.pi/2., 0., -0.8, 0.75]
 robot.set_base_pose(robot_base_pose)
 
 
@@ -22,11 +22,12 @@ robot.set_base_pose(robot_base_pose)
 init_positions = copy.copy(robot.positions())
 # init_positions[0] = -2.
 init_positions[3] = -np.pi / 2.0
-init_positions[5] = np.pi / 2.0
+init_positions[5] = np.pi / 4.0
+init_positions[1] = np.pi / 4.0
 robot.set_positions(init_positions)
 robot.fix_to_world()
 robot.set_position_enforced(True)
-# robot.set_actuator_types("servo")
+robot.set_actuator_types("servo")
 
 
 table_packages = [("table", "robots/table")]
