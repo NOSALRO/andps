@@ -13,7 +13,7 @@ from env import PushEnv
 # A fixed seed is used for the eval environment
 
 
-def eval_policy(policy, env_name, seed, eval_episodes=10):
+def eval_policy(policy, env_name, seed, eval_episodes=1):
     if eval_episodes == 0:
         return 0
     eval_env = PushEnv(enable_graphics=True, enable_record=True, seed=seed+100)
@@ -37,7 +37,7 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policy", default="DDPG")
+    parser.add_argument("--policy", default="TD3")
     # OpenAI gym environment name
     parser.add_argument("--env", default="PushEnv")
     # Sets Gym, PyTorch and Numpy seeds
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     if args.load_model != "":
         policy_file = file_name if args.load_model == "default" else args.load_model
-        policy.load(f"./models/{policy_file}")
+        policy.load(f"./models/{policy_file}_799999")
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
 

@@ -13,7 +13,7 @@ from env import PushEnv
 # A fixed seed is used for the eval environment
 
 MAX_STEPS = 500
-NO_EXPLORE_EPISODES = 1000
+NO_EXPLORE_EPISODES = 1
 def eval_policy(policy, env_name, seed, eval_episodes=2):
     eval_env = PushEnv(enable_graphics=False, enable_record=False, seed=seed+100, max_steps=MAX_STEPS)
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
             policy.train(replay_buffer, args.batch_size)
 
         if done:
-            print("Target: ", policy.actor.x_tar)
+            print("Target: ", policy.actor.x_tar[0].weight)
 
             # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
             print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f} Is Training: {t >= args.start_timesteps}")

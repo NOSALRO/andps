@@ -32,6 +32,7 @@ class PushEnv(gym.Env):
         self.rewards_vel = []
         self.rewards_eef = []
         self.rewards_star = []
+        self.max_reward = -np.inf
     def step(self, action):
         # action is the 3D cartesian velocity of the end effector, we keep the orientation fixed with a PID controller
         vel_rot = self.controller.update(self.robot.body_pose(self.eef_link_name))[0][:3]
@@ -55,7 +56,12 @@ class PushEnv(gym.Env):
             plt.plot(self.rewards_eef, label="eef_reward")
             plt.plot(self.rewards_star, label="star_reward")
             plt.legend()
-            plt.savefig("plots/rewards.png")
+            total_reward = sum(self.episode_rewards)
+            plt.title("Reward: " + str(total_reward))
+            plt.savefig("plots/cur_reward.png")
+            if(total_reward > self.max_reward):
+                self.max_reward = total_reward
+                plt.savefig("plots/max_reward.png")
             plt.close()
             plt.cla()
             plt.clf()
@@ -147,7 +153,7 @@ class PushEnv(gym.Env):
 
     def reset_target(self):
         target_tf = dartpy.math.Isometry3()
-        target_tf.set_translation([0.2, 0.3, 0.8])
+        target_tf.set_translation([-0.1, 0.12, 0.78])
         self.target.set_base_pose(target_tf)
 
     def setup_env(self):
@@ -170,9 +176,9 @@ class PushEnv(gym.Env):
 
     def calc_reward(self):
 
-        dist = -np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
-        p = 0.2
-        star_to_center = np.exp(-0.5 * dist * dist / (p * p))
+        star_to_center = -np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
+        # p = 0.1
+        # star_to_center = np.exp(-0.5 * dist * dist / (p * p))
 
         eef_to_star = -0.1 * np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
         vel = -0.01 * np.linalg.norm(self.robot.body_velocity(self.eef_link_name)[3:])
