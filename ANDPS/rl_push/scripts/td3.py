@@ -10,9 +10,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Implementation of Twin Delayed Deep Deterministic Policy Gradients (TD3)
 # Paper: https://arxiv.org/abs/1802.09477
 
-
 class ActorAndps(nn.Module):
-    def __init__(self, ds_dim, N=4):
+    def __init__(self, ds_dim, N=6):
         super(ActorAndps, self).__init__()
         self.N = N
         # print("N = ", N)
@@ -33,9 +32,9 @@ class ActorAndps(nn.Module):
 
         self.all_weights = nn.Sequential(
             nn.Linear(self.ds_dim, 64), nn.ReLU(), nn.Linear(64, N), nn.Softmax(dim=1))
-        self.x_tar = nn.Parameter(torch.randn(self.ds_dim))  # .to(device)
+        self.x_tar = nn.Parameter(torch.sigmoid(torch.randn(self.ds_dim)))  # .to(device)
 
-    def forward(self, x, ):
+    def forward(self, x):
         batch_size = x.shape[0]
         s_all = torch.zeros((1, self.ds_dim)).to(x.device)
         w_all = self.all_weights(x)
@@ -120,12 +119,12 @@ class TD3(object):
         self.actor_target = ActorAndps(state_dim, N).to(device)
         self.actor_target.load_state_dict(actor_state_dict)
         self.actor_optimizer = torch.optim.Adam(
-            self.actor.parameters(), lr=5e-4)
+            self.actor.parameters(), lr=1e-4)
 
         self.critic = Critic(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(
-            self.critic.parameters(), lr=1e-3)
+            self.critic.parameters(), lr=1e-4)
 
         self.max_action = max_action
         self.discount = discount

@@ -13,8 +13,8 @@ from env import PushEnv
 # A fixed seed is used for the eval environment
 
 MAX_STEPS = 500
-NO_EXPLORE_EPISODES = 1000
-def eval_policy(policy, env_name, seed, eval_episodes=2):
+NO_EXPLORE_EPISODES = 2000
+def eval_policy(policy, env_name, seed, eval_episodes=1):
     eval_env = PushEnv(enable_graphics=False, enable_record=False, seed=seed+100, max_steps=MAX_STEPS)
 
     avg_reward = 0.
@@ -48,19 +48,19 @@ if __name__ == "__main__":
     # Max time steps to run environment
     parser.add_argument("--max_timesteps", default=MAX_STEPS * 100000, type=int)
     # Std of Gaussian exploration noise
-    parser.add_argument("--expl_noise", default=0.1, type=float)
+    parser.add_argument("--expl_noise", default=0.4, type=float)
     # Batch size for both actor and critic
-    parser.add_argument("--batch_size", default=128, type=int)
+    parser.add_argument("--batch_size", default=512, type=int)
     parser.add_argument("--discount", default=0.99,
                         type=float)     # Discount factor
     # Target network update rate
-    parser.add_argument("--tau", default=0.005, type=float)
+    parser.add_argument("--tau", default=0.01, type=float)
     # Noise added to target policy during critic update
     parser.add_argument("--policy_noise", default=0.1)
     # Range to clip target policy noise
     parser.add_argument("--noise_clip", default=0.5)
     # Frequency of delayed policy updates
-    parser.add_argument("--policy_freq", default=1, type=int)
+    parser.add_argument("--policy_freq", default=2, type=int)
     # Save model and optimizer parameters
     parser.add_argument("--save_model", action="store_true")
     # Model load file name, "" doesn't load, "default" uses file_name
@@ -155,7 +155,7 @@ if __name__ == "__main__":
             plt.plot(rewards, label='Reward per episode', color='slateblue')
             # plot horizontal line at NO_EXPLORE_EPISODES
             plt.axvline(x=NO_EXPLORE_EPISODES, color='darkorange', linestyle='--', label='Exploration')
-            plt.ylim(0., 200.)
+            # plt.ylim(-400., 0.)
             plt.ylabel('Episode Reward')
             plt.xlabel('Episode')
             plt.title(f"Policy: {args.policy} ")
@@ -179,4 +179,4 @@ if __name__ == "__main__":
             # plt.plot(evaluations)
             # plt.savefig(f"./plots/{file_name}.png")
             np.save(f"./results/{file_name}", evaluations)
-            if args.save_model: policy.save(f"./models/{file_name}")
+            policy.save(f"./models/{file_name}_new_params_episode_{str((t+1)//MAX_STEPS)}")

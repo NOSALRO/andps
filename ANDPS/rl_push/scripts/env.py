@@ -4,7 +4,10 @@ import dartpy
 import RobotDART as rd
 import copy
 import matplotlib.pyplot as plt
-from utils import PIDTask as PID, damped_pseudoinverse
+from utils import PIDTask as PID, damped_pseudoinverse, error, AdT, angle_wrap_multi
+
+
+
 
 
 class PushEnv(gym.Env):
@@ -32,6 +35,7 @@ class PushEnv(gym.Env):
         self.rewards_vel = []
         self.rewards_eef = []
         self.rewards_star = []
+        self.max_reward = -np.inf
     def step(self, action):
         # action is the 3D cartesian velocity of the end effector, we keep the orientation fixed with a PID controller
         vel_rot = self.controller.update(self.robot.body_pose(self.eef_link_name))[0][:3]
@@ -55,7 +59,12 @@ class PushEnv(gym.Env):
             plt.plot(self.rewards_eef, label="eef_reward")
             plt.plot(self.rewards_star, label="star_reward")
             plt.legend()
-            plt.savefig("plots/rewards.png")
+            total_reward = sum(self.episode_rewards)
+            plt.title("Reward: " + str(total_reward))
+            plt.savefig("plots/cur_reward.png")
+            if(total_reward > self.max_reward):
+                self.max_reward = total_reward
+                plt.savefig("plots/max_reward.png")
             plt.close()
             plt.cla()
             plt.clf()
@@ -124,6 +133,19 @@ class PushEnv(gym.Env):
         init_positions[5] = np.pi / 4.0
         init_positions[1] = np.pi / 4.0
         self.robot.set_positions(init_positions)
+
+        tf_desired = dartpy.math.Isometry3()
+        translation = copy.copy(self.robot.body_pose(self.eef_link_name).translation())
+        # add random offset to the initial eef position
+        translation[0] += np.random.uniform(-0.3, 0.3)
+        translation[1] += np.random.uniform(-0.3, 0.3)
+        translation[2] += np.random.uniform(-0.1, 0.3)
+
+        tf_desired.set_translation(translation)
+        tf_desired.set_rotation(self.robot.body_pose(self.eef_link_name).rotation())
+        random_positions = self.ik_jac(init_positions, tf_desired)
+
+        self.robot.set_positions(random_positions)
         Kp = np.array([20., 20., 20., 10., 10., 10.])
         Kd = Kp * 0.01
         Ki = Kp * 0.1
@@ -147,7 +169,7 @@ class PushEnv(gym.Env):
 
     def reset_target(self):
         target_tf = dartpy.math.Isometry3()
-        target_tf.set_translation([0.2, 0.3, 0.8])
+        target_tf.set_translation([-0.3, -0.2, 0.78])
         self.target.set_base_pose(target_tf)
 
     def setup_env(self):
@@ -170,9 +192,9 @@ class PushEnv(gym.Env):
 
     def calc_reward(self):
 
-        dist = -np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
-        p = 0.2
-        star_to_center = np.exp(-0.5 * dist * dist / (p * p))
+        star_to_center = -np.linalg.norm(self.box.base_pose().translation() - self.target.base_pose().translation())
+        # p = 0.1
+        # star_to_center = np.exp(-0.5 * dist * dist / (p * p))
 
         eef_to_star = -0.1 * np.linalg.norm(self.robot.body_pose(self.eef_link_name).translation() - self.box.base_pose().translation())
         vel = -0.01 * np.linalg.norm(self.robot.body_velocity(self.eef_link_name)[3:])
@@ -184,3 +206,36 @@ class PushEnv(gym.Env):
         reward = star_to_center + eef_to_star + vel
 
         return reward
+    # taken from Cotas' course
+    def ik_jac(self, init_positions, tf_desired, step = np.pi/4., max_iter = 100, min_error = 1e-6):
+        pos = init_positions
+        for _ in range(max_iter):
+            self.robot.set_positions(pos)
+            tf = self.robot.body_pose(self.eef_link_name)
+            Ad_tf = AdT(tf)
+            error_in_body_frame = error(tf, tf_desired)
+            error_in_world_frame = Ad_tf @ error_in_body_frame
+
+            ferror = np.linalg.norm(error_in_world_frame)
+            if ferror < min_error:
+                break
+
+            jac = self.robot.jacobian(self.eef_link_name) # this is in world frame
+            jac_pinv = damped_pseudoinverse(jac) # np.linalg.pinv(jac) # get pseudo-inverse
+
+            delta_pos = jac_pinv @ error_in_world_frame
+            # We can limit the delta_pos to avoid big steps due to pseudo-inverse instability
+            # you can play with the step value to see the effect
+            for i in range(delta_pos.shape[0]):
+                if delta_pos[i] > step:
+                    delta_pos[i] = step
+                elif delta_pos[i] < -step:
+                    delta_pos[i] = -step
+
+            pos = pos + delta_pos
+
+        # We would like to wrap the final joint positions to [-pi,pi)
+        pos = angle_wrap_multi(pos)
+        print('Final error:', ferror)
+
+        return pos
