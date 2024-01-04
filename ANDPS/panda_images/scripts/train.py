@@ -25,24 +25,25 @@ data = [data_angle, data_line, data_sine]
 
 # create dataset with image indexing
 # images = []
-targets = []
 for i in range(len(data)):
-    targets.append(data[i]["eef_x"][-1, :])
-    if (i == 0):
+    if(i == 0):
         np_X = torch.Tensor(data[i]["np_X"])
         np_Y = torch.Tensor(data[i]["eef_vx"])
+        target=data[i]["eef_x"][-1,:]
     else:
         cur_np_X = torch.Tensor(data[i]["np_X"])
         np_X = torch.cat((np_X, cur_np_X), 0)
         np_Y = torch.cat((np_Y, torch.Tensor(data[i]["eef_vx"])), 0)
+        target+=data[i]["eef_x"][-1,:]
 
 
-assert np_X.shape[0] == len(data)*720
-assert np_X.shape[1] == (3+64*64)
+target/=len(data)
 
-target = np.zeros(3)
-for t in targets:
-    target += t/len(data)
+
+assert np_X.shape[0]==len(data)*1300
+assert np_X.shape[1]==(3+64*64)
+
+
 
 dataset = CustomDataset(np_X, np_Y)
 dim = np_Y.shape[1]
@@ -55,16 +56,17 @@ if EXPERIMENT == 'ANDPS':
 elif EXPERIMENT == 'CNN':
     net = simple_cnn(dim)
 
+dim = np_Y.shape[1]
+
 net.to(device)
 
 # Hyperparameters
 batch_size = 128
-epochs = 200
+epochs = 500
 le_r = 5e-4
 
 
 # Load dataset
-
 dataset = CustomDataset(np_X, np_Y)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -104,5 +106,4 @@ for epoch in range(epochs):  # loop over the dataset multiple times
     if ((epoch + 1) % 10 == 0):
         torch.save(net.state_dict(), 'models/' + EXPERIMENT_NICE_NAME + '_' + str(epoch + 1) + '.pt')
 print('Finished Training')
-torch.save(net.state_dict(), 'models/' +
-           EXPERIMENT_NICE_NAME+'_' + str(epoch + 1) + '.pt')
+torch.save(net.state_dict(), 'models/' + EXPERIMENT_NICE_NAME+'_' + str(epoch + 1) + '.pt')

@@ -13,17 +13,34 @@ convert_tensor = transforms.ToTensor()
 
 
 
-
 # EXPERIMENT = 'ANDPS'
 # EXPERIMENT_NICE_NAME = 'andps_images'
 EXPERIMENT = 'CNN'
 EXPERIMENT_NICE_NAME = 'simple_cnn'
 
+TARGET_MOTION = "angle"
+# TARGET_MOTION = "sine"
+# TARGET_MOTION = "line"
+
+# Test ANDPs' Robustness
+APPLY_PERTURBATION = True
+PERTURBATION_TYPE = "push"
+# PERTURBATION_TYPE = "noise"
+NOISE_PERCENTAGE = 1
+# NOISE_PERCENTAGE = 3
+
+
+# Test ANDPs' reactiveness
+CHANGE_IMAGE = False
+TARGET_MOTION_TWO = "sine"
+if CHANGE_IMAGE:
+    assert TARGET_MOTION != TARGET_MOTION_TWO
+
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
 
 # get end effector position (xyz)
-
-
 def get_eef_state(robot, eef_link_name="panda_ee"):
     return robot.body_pose(eef_link_name).translation()
 
@@ -47,17 +64,17 @@ def image_as_grayscale_array(rd_image):
         rd_image).data).reshape(rd_image.width, rd_image.height)
     return image
 
-
 def get_state(robot, rd_image):
     pos = robot.body_pose(eef_link_name).translation()
-    img = image = np.array(rd.gui.convert_rgb_to_grayscale(rd_image).data)
+    if (PERTURBATION_TYPE == "noise" and APPLY_PERTURBATION):
+        pos += np.random.normal(0, np.abs(pos) * NOISE_PERCENTAGE/100)
+    img = np.array(rd.gui.convert_rgb_to_grayscale(rd_image).data)
     return np.concatenate([pos, img])
 
-
-target = [0.40082605, 0.40457038, 0.52994658]
+target = np.array([0.55, 0.404,  0.52])
 
 # RobotDART Simulation
-dt = 0.001
+dt = 0.01
 control_freq = 100
 simu = rd.RobotDARTSimu(dt)
 simu.set_collision_detector("fcl")
@@ -72,16 +89,20 @@ eef_link_name = "panda_ee"
 simu.add_robot(robot)
 set_initial_pos(robot)
 
+
+if (APPLY_PERTURBATION or CHANGE_IMAGE):
+    assert CHANGE_IMAGE != APPLY_PERTURBATION
+
 # box
-line_box_packages = [("line_box", "urdfs/line_box")]
-line_box = rd.Robot("urdfs/line_box/line_box.urdf",
-                    line_box_packages, "line_box")
-line_box.set_color_mode("material")
-line_box.fix_to_world()
-box_tf = line_box.base_pose()
+box_packages = [(TARGET_MOTION+"_box", "urdfs/"+TARGET_MOTION+"_box")]
+box = rd.Robot("urdfs/"+TARGET_MOTION+"_box/"+TARGET_MOTION +
+                    "_box.urdf",  box_packages, TARGET_MOTION+"_box")
+box.set_color_mode("material")
+box.fix_to_world()
+box_tf = box.base_pose()
 box_tf.set_translation([3.5, 0., 1.])
-line_box.set_base_pose(box_tf)
-simu.add_robot(line_box)
+box.set_base_pose(box_tf)
+simu.add_robot(box)
 
 # graphics
 gconfig = rd.gui.Graphics.default_configuration()
@@ -95,14 +116,14 @@ graphics.look_at((-2.5, 1.0, 1.), (0.0, 0.0, 0.5))
 
 # record images from main camera/graphics
 graphics.camera().record(True)
-graphics.record_video("line-env-eval.mp4", simu.graphics_freq())
+graphics.record_video(TARGET_MOTION+"-env-eval.mp4", simu.graphics_freq())
 
 # add camera
 im_width = 64
 im_height = 64
 camera = rd.sensor.Camera(graphics.magnum_app(), im_width, im_height)
 camera.camera().record(True)
-camera.record_video("line-pov-eval.mp4")
+camera.record_video(TARGET_MOTION+"-pov-eval.mp4")
 
 # make camera look forward, attach to ee, add to simu
 tf = dartpy.math.Isometry3()
@@ -142,17 +163,51 @@ leave_trace = 0
 continue_simu = True
 
 
-# Number o
-# f dynamical systems
-num_DS = 8
-net = andps(3, num_DS, target, device)
+# Number of dynamical systems
+if EXPERIMENT == 'ANDPS':
+    num_DS = 4
+    net = andps(3, num_DS, target, device)
+elif EXPERIMENT == 'CNN':
+    net = simple_cnn(3)
 net.to(device)
-net.load_state_dict(torch.load("models/panda_image_200.pt"))
+net.load_state_dict(torch.load("models/" +EXPERIMENT_NICE_NAME+ "_100.pt"))
 net.eval()
 while (continue_simu):
     t += dt
+
     update = False
     if simu.scheduler().schedule(control_freq):
+        # Apply perturbations
+        if (APPLY_PERTURBATION):
+            # noise perturbation is handled in the get_state function so we only deal with push here
+            if (PERTURBATION_TYPE == "push"):
+                if (0 <= t and t <= 0.2):
+                    robot.set_external_force(eef_link_name, [-50., -100., 80.])
+                    print("push 1")
+                    print(t, dt)
+                elif (4 <= t and t <= 4.5):
+                    robot.set_external_force(eef_link_name, [50., 10., 60.])
+                    print("push 2")
+                    print(t, dt)
+                else:
+                    robot.set_external_force(eef_link_name, [0., 0., 0.])
+            
+        elif (CHANGE_IMAGE and 0.99<=t<=1.0):
+            print("changing image")
+            # let's remove the box
+            simu.remove_robot(box)
+
+            # And add the box with the new motion
+            box_packages = [(TARGET_MOTION_TWO+"_box", "urdfs/"+TARGET_MOTION_TWO+"_box")]
+            box = rd.Robot("urdfs/"+TARGET_MOTION_TWO+"_box/"+TARGET_MOTION_TWO +
+                                "_box.urdf",  box_packages, TARGET_MOTION_TWO+"_box")
+            box.set_color_mode("material")
+            box.fix_to_world()
+            box_tf = box.base_pose()
+            box_tf.set_translation([3.5, 0., 1.])
+            box.set_base_pose(box_tf)
+            simu.add_robot(box)
+
         update = True
         eef_tf = robot.body_pose(eef_link_name)
         vel_rot = controller.update(eef_tf)[0][:3]
@@ -170,8 +225,7 @@ while (continue_simu):
         robot.set_commands(cmd)
 
         timestep_counter += 1
-
-        if (timestep_counter == 1000):
+        if (timestep_counter == 1500):
             continue_simu = False
     simu.step_world()
     if update:
@@ -185,8 +239,18 @@ ax = plt.axes(projection="3d")
 
 ax.scatter(eef_trajectory[:, 0], eef_trajectory[:, 1],
            eef_trajectory[:, 2], c='r')
-data = np.load('data/line.npz')
-eef_x = data['eef_x']
+data = np.load('data/'+TARGET_MOTION+'.npz')
 
-ax.scatter(eef_x[:, 0], eef_x[:, 1], eef_x[:, 2], c='b')
-plt.show()
+
+if (APPLY_PERTURBATION and PERTURBATION_TYPE == "push"):
+    np.savez('data/'+EXPERIMENT_NICE_NAME+"_"+TARGET_MOTION+'_push_eval.npz',
+             train=data['np_X'][:, :3], test=eef_trajectory, images=images, t_application=[0, 4])
+elif (APPLY_PERTURBATION and PERTURBATION_TYPE == "noise"):
+    np.savez('data/'+EXPERIMENT_NICE_NAME+"_"+TARGET_MOTION+'_noise_'+str(NOISE_PERCENTAGE)+'_perc_eval.npz',
+             train=data['np_X'][:, :3], test=eef_trajectory, images=images, noise_percentage=NOISE_PERCENTAGE)
+elif (CHANGE_IMAGE):
+    np.savez('data/'+EXPERIMENT_NICE_NAME+"_"+TARGET_MOTION+'_to_'+TARGET_MOTION_TWO+'_eval.npz',
+             train=data['np_X'][:, :3], test=eef_trajectory, images=images, t_change=1)
+else:
+    np.savez('data/'+EXPERIMENT_NICE_NAME+"_"+TARGET_MOTION+'_eval.npz',
+             train=data['np_X'][:, :3], test=eef_trajectory, images=images)

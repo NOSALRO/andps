@@ -226,3 +226,65 @@ def damped_pseudoinverse(jac, l=0.1):
     if n >= m:
         return jac.T @ np.linalg.inv(jac @ jac.T + l*l*np.eye(m))
     return np.linalg.inv(jac.T @ jac + l*l*np.eye(n)) @ jac.T
+
+
+
+# function for skew symmetric
+def skew_symmetric(v):
+    mat = np.zeros((3, 3))
+    mat[0, 1] = -v[2]
+    mat[1, 0] = v[2]
+    mat[0, 2] = v[1]
+    mat[2, 0] = -v[1]
+    mat[1, 2] = -v[0]
+    mat[2, 1] = v[0]
+
+    return mat
+# function for Adjoint
+def AdT(tf):
+    R = tf.rotation()
+    T = tf.translation()
+    tr = np.zeros((6, 6))
+    tr[0:3, 0:3] = R
+    tr[3:6, 0:3] = skew_symmetric(T) @ R
+    tr[3:6, 3:6] = R
+
+    return tr
+
+    return angle_wrap(theta)
+
+def error(tf, tf_desired):
+    return rd.math.logMap(tf.inverse().multiply(tf_desired))
+
+def ik_jac(robot, eef_link_name, tf_desired, step = np.pi/4., max_iter = 100, min_error = 1e-6):
+        pos = robot.positions()
+        for _ in range(max_iter):
+            robot.set_positions(pos)
+            tf = robot.body_pose(eef_link_name)
+            Ad_tf = AdT(tf)
+            error_in_body_frame = error(tf, tf_desired)
+            error_in_world_frame = Ad_tf @ error_in_body_frame
+
+            ferror = np.linalg.norm(error_in_world_frame)
+            if ferror < min_error:
+                break
+
+            jac = robot.jacobian(eef_link_name) # this is in world frame
+            jac_pinv = damped_pseudoinverse(jac) # np.linalg.pinv(jac) # get pseudo-inverse
+
+            delta_pos = jac_pinv @ error_in_world_frame
+            # We can limit the delta_pos to avoid big steps due to pseudo-inverse instability
+            # you can play with the step value to see the effect
+            for i in range(delta_pos.shape[0]):
+                if delta_pos[i] > step:
+                    delta_pos[i] = step
+                elif delta_pos[i] < -step:
+                    delta_pos[i] = -step
+
+            pos = pos + delta_pos
+
+        # We would like to wrap the final joint positions to [-pi,pi)
+        pos = angle_wrap_multi(pos)
+        # print('Final error:', ferror)
+
+        return pos

@@ -102,9 +102,9 @@ def plot_multi_task():
     fig.tight_layout(pad=0.5, w_pad=0.15, h_pad=0.1, rect=(0, 0.075, 1, 1))
     plt.legend(bbox_to_anchor=(-0.6, -1.3), loc='lower center', ncol=3, fancybox=True, shadow=True)
     # lgnd.legendHandles[4]._sizes = [30]
-    plt.savefig("plots/"+NICE_NAME + ".svg", dpi=100)
-    plt.savefig("plots/"+NICE_NAME + ".png", dpi=100)
-    plt.savefig("plots/"+NICE_NAME + ".pdf", dpi=100)
+    plt.savefig("plots/"+ NICE_NAME + ".svg", dpi=100)
+    plt.savefig("plots/"+ NICE_NAME + ".png", dpi=100)
+    plt.savefig("plots/"+ NICE_NAME + ".pdf", dpi=100)
     plt.show()
     plt.close()
 

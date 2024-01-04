@@ -4,9 +4,9 @@ import dartpy
 from utils import *
 import matplotlib.pyplot as plt
 
-# MOTION_TYPE = "angle"
+MOTION_TYPE = "angle"
 # MOTION_TYPE  = "sine"
-MOTION_TYPE = "line"
+# MOTION_TYPE = "line"
 
 # get end effector position (xyz)
 def get_eef_state(robot, eef_link_name="panda_ee"):
@@ -29,10 +29,10 @@ def image_as_grayscale_array(rd_image):
     return image
 
 
-target = [5.54499532e-01, 0.404,  5.21498266e-01]
+target = [0.55, 0.404,  0.52]
 
 # RobotDART Simulation
-dt = 0.001
+dt = 0.01
 control_freq = 100
 simu = rd.RobotDARTSimu(dt)
 simu.set_collision_detector("fcl")
@@ -102,6 +102,7 @@ target_tf.set_translation(target)
 simu.add_visual_robot(rd.Robot.create_ellipsoid([0.05, 0.05, 0.05], target_tf, "fix",  color=[
                       0.211, 0.596, 0.184, 1], ellipsoid_name="target"))
 
+
 # warmstart simulation
 for _ in range(10):
     simu.step_world()
@@ -135,18 +136,21 @@ while (continue_simu):
             vel = np.concatenate((vel_rot, vel_xyz))
 
             # Hacky way to slow down the robot at the end of the trajectory
-            if (timestep_counter >= 350) and (timestep_counter < 700):
+            if (timestep_counter >= 350) and (timestep_counter < 1000):
                 # a = (700 - timestep_counter)/150.
                 vel[3:] = 2 * \
                     (target - robot.body_pose(eef_link_name).translation().reshape(3,))
-            elif (timestep_counter >= 700):
-
+            elif (timestep_counter >= 1000):
                 vel = np.zeros([6])
         elif MOTION_TYPE == "line":
-            A = np.eye(3)
-            vel_xyz = A @ (target -
-                           robot.body_pose(eef_link_name).translation())
+            A = np.eye(3) * 1/2
+            vel_xyz = A @ (target - robot.body_pose(eef_link_name).translation())
             vel = np.concatenate((vel_rot, vel_xyz))
+            if( 800<=timestep_counter < 1000):
+                vel[3:] = 2 * \
+                    (target - robot.body_pose(eef_link_name).translation().reshape(3,))
+            if(timestep_counter >= 1000):
+                vel = np.zeros([6])
             # Jacobian pseudo-inverse
         elif MOTION_TYPE == "sine":
             vel_xyz[0] = 1/2*(target[0] - eef_tf.translation()[0])
@@ -155,10 +159,10 @@ while (continue_simu):
             vel_xyz[2] = -0.3 * np.sin(np.pi * t/1)
             vel = np.concatenate((vel_rot, vel_xyz))
              # Hacky way to slow down the robot at the end of the trajectory
-            if(timestep_counter >= 350) and (timestep_counter < 700):
+            if(timestep_counter >= 350) and (timestep_counter < 1000):
                 # a = (700 - timestep_counter)/150.
-                vel[3:] =  2*(target - robot.body_pose(eef_link_name).translation().reshape(3,))
-            elif (timestep_counter >= 700):
+                vel[3:] =  5*(target - robot.body_pose(eef_link_name).translation().reshape(3,))
+            elif (timestep_counter >= 1000):
                 vel = np.zeros([6])
         else:
             raise ValueError(
@@ -171,14 +175,16 @@ while (continue_simu):
         robot.set_commands(cmd)
         timestep_counter += 1
 
-        if (timestep_counter == 720):
+        if (timestep_counter == 1300):
             continue_simu = False
     simu.step_world()
     if update:
         eef_trajectory = np.vstack(
             (eef_trajectory, robot.body_pose(eef_link_name).translation()))
         images = np.dstack((images, image_as_grayscale_array(camera.image())))
-
+print("Total t: ", t)
+print("Final eef pos: ", robot.body_pose(eef_link_name).translation())
+print("Target pos: ", target)
 
 # compute velocity (x_t+1 - x_t)/dt
 eef_x = eef_trajectory[:-1, :]
