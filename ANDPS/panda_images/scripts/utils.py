@@ -52,7 +52,7 @@ class CNN_lasa_image(nn.Module):
         # img = torch.empty(size=(state.shape[0], 1, 64, 64)).to(state.device)
         # for i in range(state.shape[0]):
         #         img[i] = state[i,3:].clone().detach().reshape(64,64)
-        import matplotlib.pyplot as plt
+        # import matplotlib.pyplot as plt
         # plt.imshow(img[i][0].cpu().numpy(),cmap='gray')
         # plt.show()
         # for img in state[:,3:].reshape(state.shape[0],1,64,64):
@@ -106,6 +106,36 @@ class andps_images(nn.Module):
 
             s_all = s_all + torch.mul(w_all[:, i].view(batch_size, 1), torch.mm(A, (self.x_tar-x[:, :3]).transpose(0, 1)).transpose(0, 1))
         return s_all
+
+
+
+
+class simple_cnn(nn.Module):
+    def __init__(self, ds_dim):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 5, kernel_size=(5, 5))
+        self.pool1 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        self.conv2 = nn.Conv2d(5, 10, kernel_size=(5, 5))
+        self.pool2 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        self.fc1 = nn.Linear(1690+ds_dim, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 128)
+        self.fc4 = nn.Linear(128, 64)
+        self.fc5 = nn.Linear(64,32)
+        self.fc6 = nn.Linear(32, ds_dim)
+    def forward(self, state):
+        x = self.pool1(F.relu(self.conv1(state[:,3:].reshape(state.shape[0],1,64,64))))
+        x = self.pool2(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1)  
+        x = torch.cat((x, state[:, :3]), dim=1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = F.relu(self.fc5(x))
+        x = self.fc6(x)
+        return x
+
 
 
 # ----------- Robot Dart -----------

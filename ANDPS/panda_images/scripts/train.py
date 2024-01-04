@@ -3,9 +3,15 @@ import torch
 import torch.nn as nn
 
 from torch.utils.data import DataLoader
-from utils import andps_images as andps,  CustomDataset
+from utils import andps_images as andps,  CustomDataset, simple_cnn
 from torchvision import transforms
-from torch.optim.lr_scheduler import StepLR
+
+
+# EXPERIMENT = 'ANDPS'
+# EXPERIMENT_NICE_NAME = 'andps_images'
+EXPERIMENT = 'CNN'
+EXPERIMENT_NICE_NAME = 'simple_cnn'
+
 convert_tensor = transforms.ToTensor()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -21,8 +27,8 @@ data = [data_angle, data_line, data_sine]
 # images = []
 targets = []
 for i in range(len(data)):
-    targets.append(data[i]["eef_x"][-1,:])
-    if(i == 0):
+    targets.append(data[i]["eef_x"][-1, :])
+    if (i == 0):
         np_X = torch.Tensor(data[i]["np_X"])
         np_Y = torch.Tensor(data[i]["eef_vx"])
     else:
@@ -31,22 +37,24 @@ for i in range(len(data)):
         np_Y = torch.cat((np_Y, torch.Tensor(data[i]["eef_vx"])), 0)
 
 
-assert np_X.shape[0]==len(data)*720
-assert np_X.shape[1]==(3+64*64)
+assert np_X.shape[0] == len(data)*720
+assert np_X.shape[1] == (3+64*64)
 
 target = np.zeros(3)
 for t in targets:
-    target+=t/len(data)
+    target += t/len(data)
 
 dataset = CustomDataset(np_X, np_Y)
-
-
-
 dim = np_Y.shape[1]
 
-# Number of dynamical systems
-num_DS = 8
-net = andps(dim, num_DS, target, device)
+
+if EXPERIMENT == 'ANDPS':
+    # Number of dynamical systems
+    num_DS = 8
+    net = andps(dim, num_DS, target, device)
+elif EXPERIMENT == 'CNN':
+    net = simple_cnn(dim)
+
 net.to(device)
 
 # Hyperparameters
@@ -63,10 +71,13 @@ dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 batches_per_epoch = np_X.shape[0]//batch_size
 optimizer = torch.optim.AdamW(net.parameters(), lr=le_r, weight_decay=0.01)
 # scheduler = StepLR(optimizer, step_size=50, gamma=0.5)
+
+
 def weights_init(m):
     if isinstance(m, nn.Conv2d):
         torch.nn.init.xavier_uniform_(m.weight.data)
         torch.nn.init.zeros_(m.bias)
+
 
 net.apply(weights_init)
 
@@ -81,14 +92,17 @@ for epoch in range(epochs):  # loop over the dataset multiple times
         optimizer.zero_grad()
         # forward + backward + optimize
         output = net(inputs.to(device).view(-1, 3+(64*64)))
-        loss = torch.nn.functional.mse_loss(output, outputs.to(device).view(-1, dim), reduction='mean')
+        loss = torch.nn.functional.mse_loss(
+            output, outputs.to(device).view(-1, dim), reduction='mean')
         running_loss += loss.item()
         loss.backward()
         optimizer.step()
     # scheduler.step()
     train_mean_loss = running_loss/batches_per_epoch
-    print("Epoch: ", epoch+1, "Loss: ", train_mean_loss)#, "Lr: ", scheduler.get_lr()[0])
+    # , "Lr: ", scheduler.get_lr()[0])
+    print("Epoch: ", epoch+1, "Loss: ", train_mean_loss)
     if ((epoch + 1) % 10 == 0):
-        torch.save(net.state_dict(),'models/panda_image_' + str(epoch + 1) + '.pt')
+        torch.save(net.state_dict(), 'models/' + EXPERIMENT_NICE_NAME + '_' + str(epoch + 1) + '.pt')
 print('Finished Training')
-torch.save(net.state_dict(), 'models/panda_image_' + str(epoch + 1) + '.pt')
+torch.save(net.state_dict(), 'models/' +
+           EXPERIMENT_NICE_NAME+'_' + str(epoch + 1) + '.pt')
