@@ -27,4 +27,4 @@ In order to populate the data folder run the script named "generate_datasets.py"
 ![](plots/results/simple_nn/NN.png)
 
 ## SEDS
-![](plots/results/seds/seds.png)
+![](plots/results/seds/SEDS.png)
