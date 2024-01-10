@@ -110,7 +110,7 @@ def plot_multi_task():
 
 ############## EXPERIMENT 2: Force perturbations, 1x4 ################
 def plot_force():
-    TITLE = "Robustness of ANDPs to external force perturbations"
+    TITLE = "Comparison of ANDPs with a simple CNN based policy to external force perturbations"
     NICE_NAME = "andps_robustness"
 
     # one row for each image
@@ -127,8 +127,8 @@ def plot_force():
     name = "angle"
 
     # read data
-    data = np.load("data/"+name+"_push_eval.npz")
-
+    data = np.load("data/andps_images_"+name+"_push_eval.npz")
+    data_cnn = np.load("data/simple_cnn_"+name+"_push_eval.npz")
     # fist plot the image (get the 5th)
     axs[0, 0].imshow(data["images"][:, :, 5], cmap='gray')
 
@@ -137,34 +137,39 @@ def plot_force():
     axs[0, 0].set_yticks([])
     # set x label t = 0s
     axs[0, 0].set_xlabel("t=0s")
-
+    axis_names = ["x-axis", "y-axis", "z-axis"]
     # then plot the x, y, z over time (one plot for each)
     for j in range(3):
-        demon = axs[0, j+1].plot(data["train"][:1000, j], color=colors[9], label="Demonstration")
-        evalu_train = axs[0, j+1].plot(data["test"][:1000, j], color=colors[3], label="Evaluation")
+        demon = axs[0, j+1].plot(data["train"][:1000, j], color="darkgray", linestyle="dotted", label="Demonstration")
+        evalu_train = axs[0, j+1].plot(data["test"][:1000, j], color=colors[3], label="ANDPs Evaluation")
+        cnn_train = axs[0, j+1].plot(data_cnn["test"][:1000, j], color=colors[9], label="CNN Evaluation")
         # scatter plot the target with a green x
-        target_pos = axs[0, j+1].scatter(1000, target[j], color="green", marker='x', label="target", s=100, zorder=10)
+        target_pos = axs[0, j+1].scatter(1000, target[j], color="seagreen", marker='x', label="target", s=100, zorder=10)
         if j == 0:
-            axs[0, j+1].set_ylim([0.4, 0.7])
+            # axs[0, j+1].set_ylim([-0.4, 1.5])
             axs[0, 1].set_ylabel("EEF")
-        elif j == 1:
-            axs[0, j+1].set_ylim([0., 0.5])
-        else:
-            axs[0, j+1].set_ylim([0.25, 0.7])
+        # elif j == 1:
+            # axs[0, j+1].set_ylim([0., 1.5])
+        # else:
+            # axs[0, j+1].set_ylim([-0.25, 1.5])
         decorate_axis(axs[0, j+1])
         axs[0, j+1].set_aspect('auto')
         # get the "t_application" from the data, and draw a dashed vertical line with label "Time of force application"
-        axs[0, j+1].axvline(x=data["t_application"][0]*100, color="black", linestyle="--", label="Time of force application")
-        axs[0, j+1].axvline(x=data["t_application"][1]*100, color="black", linestyle="--")
+        axs[0, j+1].axvspan(data["t_application"][0]*100, data["t_application"][0]*100 + 0.2*100, color='darkgray', alpha=0.1, linewidth=0,label="Time of force application")
+        axs[0, j+1].axvspan(data["t_application"][1]*100, data["t_application"][1]*100 + 0.3*100, color='darkgray', alpha=0.1, linewidth=0)
+
+        # axs[0, j+1].axvline(x=data["t_application"][0]*100, color="black", linestyle="--", label="Time of force application")
+        # axs[0, j+1].axvline(x=data["t_application"][1]*100, color="black", linestyle="--")
 
         # convert the 1000 ticks to 10s
         axs[0, j+1].set_xticks([0, 250, 500, 750, 1000])
         axs[0, j+1].set_xticklabels([0, 2.5, 5, 7.5, 10])
         axs[0, j+1].set_xlabel("time (s)")
+        axs[0, j+1].set_title(axis_names[j])
 
     axs[0, 0].set_title("Non controllable part")
     fig.tight_layout(pad=0.5, w_pad=0.1, h_pad=0.1, rect=(0, 0.075, 1, 1))
-    plt.legend(bbox_to_anchor=(-0.6, -0.45), loc='lower center', ncol=4, fancybox=True, shadow=True)
+    plt.legend(bbox_to_anchor=(-0.6, -0.45), loc='lower center', ncol=5, fancybox=True, shadow=True)
     plt.savefig("plots/"+NICE_NAME + ".svg", dpi=100)
     plt.savefig("plots/"+NICE_NAME + ".png", dpi=100)
     plt.savefig("plots/"+NICE_NAME + ".pdf", dpi=100)
@@ -173,64 +178,72 @@ def plot_force():
 
 ############## EXPERIMENT 3: White noise, 1x4 ################
 def plot_noise():
-    TITLE = "Robustness of ANDPs to i.i.d gaussian noise"
+    TITLE = "Comparison of ANDPs with a simple CNN based policy to i.i.d Gaussian noise application"
     NICE_NAME = "andps_robustness_noise"
 
     # one row for each image
-    rows = 1
+    rows = 2
 
     # image, x, y, z
     cols = 4
 
-    fig, axs = plt.subplots(rows, cols, sharey=False, squeeze=False)
+    fig = plt.figure(constrained_layout=True)
+    spec = gridspec.GridSpec(ncols=cols, nrows=rows, figure=fig)
     fig.suptitle(TITLE)
 
     # set figzise height to 1/3 of the params
-    fig.set_figheight(fig.get_figheight()/1.5)
+    # fig.set_figheight(fig.get_figheight()/1.5)
 
     name = "sine"
 
     # read data
-    data_a = np.load("data/"+name+"_noise_1_perc_eval.npz")
-    data_b = np.load("data/"+name+"_noise_3_perc_eval.npz")
-
+    andps_evals = [ np.load("data/andps_images_"+name+"_noise_1_perc_eval.npz"), np.load("data/andps_images_"+name+"_noise_3_perc_eval.npz")] 
+    cnn_evals = [ np.load("data/simple_cnn_"+name+"_noise_1_perc_eval.npz"), np.load("data/simple_cnn_"+name+"_noise_3_perc_eval.npz")]
+    
+    noise_perc = ["1", "3"]
     # fist plot the image (get the 5th)
-    axs[0, 0].imshow(data_a["images"][:, :, 5], cmap='gray')
+    axs = fig.add_subplot(spec[:, 0])
+    axs.imshow(andps_evals[0]["images"][:, :, 5], cmap='gray')
 
+    axs.set_title("Non controllable part")
+    axis_names = ["x-axis", "y-axis", "z-axis"]
     # disable ticks
-    axs[0, 0].set_xticks([])
-    axs[0, 0].set_yticks([])
+    axs.set_xticks([])
+    axs.set_yticks([])
     # set x label t = 0s
-    axs[0, 0].set_xlabel("t=0s")
+    axs.set_xlabel("t=0s")
 
     # then plot the x, y, z over time (one plot for each)
+    for i in range(2):
+        for j in range(3):
+            axs = fig.add_subplot(spec[i, j+1])
+            demon = axs.plot(andps_evals[0]["train"][:1000, j], color="darkgray", linestyle="dotted", label="Demonstration")
+            
+            evalu_train = axs.plot(andps_evals[i]["test"][:1000, j], color=colors[3], label="ANDPs Evaluation")
+            evalu_cnn = axs.plot(cnn_evals[i]["test"][:1000, j],  color=colors[9], label="CNN Evaluation")
+            
+            # scatter plot the target with a green x
+            target_pos = axs.scatter(1000, target[j], color="green", marker='x', label="target", s=100, zorder=10)
+            if j == 0:
+                axs.set_ylabel("EEF \n noise="+noise_perc[i]+"%")
+            #     axs[0, 1].set_ylim([0.5, 0.58])
+            # elif j == 1:
+            #     axs[0, 2].set_ylim([0., 0.5])
+            # else:
+            #     axs[0, 3].set_ylim([0.3, 0.55])
+            decorate_axis(axs)
+            axs.set_aspect('auto')
+            axs.set_title(axis_names[j])
 
-    for j in range(3):
-        demon = axs[0, j+1].plot(data_a["train"][:1000, j], color=colors[9], label="Demonstration")
-        evalu_train = axs[0, j+1].plot(data_a["test"][:1000, j], color=colors[3], label="Evaluation with 1% noise")
-        evalu_train = axs[0, j+1].plot(data_b["test"][:1000, j], color=colors[5], label="Evaluation with 3% noise")
-        
+            # convert the 1000 ticks to 10s
+            axs.set_xticks([0, 250, 500, 750, 1000])
+            axs.set_xticklabels([0, 2.5, 5, 7.5, 10])
+            axs.set_xlabel("time (s)")
 
-        # scatter plot the target with a green x
-        target_pos = axs[0, j+1].scatter(1000, target[j], color="green", marker='x', label="target", s=100, zorder=10)
-        if j == 0:
-            axs[0, 1].set_ylabel("EEF")
-            axs[0, 1].set_ylim([0.5, 0.58])
-        elif j == 1:
-            axs[0, 2].set_ylim([0., 0.5])
-        else:
-            axs[0, 3].set_ylim([0.3, 0.55])
-        decorate_axis(axs[0, j+1])
-        axs[0, j+1].set_aspect('auto')
 
-        # convert the 1000 ticks to 10s
-        axs[0, j+1].set_xticks([0, 250, 500, 750, 1000])
-        axs[0, j+1].set_xticklabels([0, 2.5, 5, 7.5, 10])
-        axs[0, j+1].set_xlabel("time (s)")
 
-    axs[0, 0].set_title("Non controllable part")
-    fig.tight_layout(pad=0.5, w_pad=0.1, h_pad=0.1, rect=(0, 0.075, 1, 1))
-    plt.legend(bbox_to_anchor=(-0.6, -0.45), loc='lower center', ncol=4, fancybox=True, shadow=True)
+    fig.tight_layout(pad=0.1, w_pad=0.1, h_pad=0.1, rect=(0.012, 0.17, 0.957, 0.91))
+    plt.legend(bbox_to_anchor=(-0.8, -0.95), loc='lower center', ncol=6, fancybox=True, shadow=True)
     plt.savefig("plots/"+NICE_NAME + ".svg", dpi=100)
     plt.savefig("plots/"+NICE_NAME + ".png", dpi=100)
     plt.savefig("plots/"+NICE_NAME + ".pdf", dpi=100)
@@ -239,7 +252,7 @@ def plot_noise():
 
 ############## EXPERIMENT 4: Change image, 1x4 ################
 def plot_reactive():
-    TITLE = "ANDPs reactiveness to changes in the non-controllable part of the state"
+    TITLE = "Comparison of ANDPs with a simple CNN based policy to reactiveness on changes in the non-controllable part of the state"
     NICE_NAME = "andps_reactiveness"
 
     # now we need a gridspec because we have 2 images for 1 set of plots
@@ -252,7 +265,9 @@ def plot_reactive():
     demo_sine = np.load("data/sine.npz")
     demo_line = np.load("data/line.npz")
 
-    eval_data = np.load("data/line_to_sine_eval.npz")
+    eval_data = np.load("data/andps_images_line_to_sine_eval.npz")
+    eval_cnn = np.load("data/simple_cnn_line_to_sine_eval.npz")
+
     # plot the 2 images in the first column of the gridspec
     axs = fig.add_subplot(spec[0, 0])
     axs.set_title("Non controllable part")
@@ -263,7 +278,7 @@ def plot_reactive():
     axs.set_xlabel("t=0s")
 
     axs = fig.add_subplot(spec[1, 0])
-    axs.imshow(eval_data["images"][:, :, 100], cmap='gray')
+    axs.imshow(eval_data["images"][:, :, 260], cmap='gray')
     axs.set_xticks([])
     axs.set_yticks([])
     axs.set_xlabel("t="+str(eval_data["t_change"])+"s")
@@ -276,23 +291,25 @@ def plot_reactive():
     demo_sine = np.append(demo_sine, np.repeat(demo_sine[-2:, :], 500, axis=0), axis=0)
     
     # now plot the trajectories
-
+    axis_names = ["x-axis", "y-axis", "z-axis"]
+    
     for j in range(3):
         axs = fig.add_subplot(spec[:, j+1])
-        evalu_train = axs.plot(eval_data["test"][:1500, j], color=colors[3], label="Evaluation",zorder=9)
+        evalu_train = axs.plot(eval_data["test"][:1500, j], color=colors[3], label="ANDPs Evaluation",zorder=9)
+        cnn_train = axs.plot(eval_cnn["test"][:1500, j], color=colors[9], label="CNN Evaluation",zorder=9)
 
         # demos for both images
-        axs.plot(demo_line[:1500, j], color="lightgray", label="Demonstration Linear",zorder=8, alpha=0.5, linestyle="dotted")
-        axs.plot(demo_sine[:1500, j], color="gray", label="Demonstration Sinusoidal",zorder=7, alpha=0.5, linestyle="dotted")
+        axs.plot(demo_line[:1500, j], color="lightgray", label="Demonstration Linear",zorder=8,  linestyle="dotted")
+        axs.plot(demo_sine[:1500, j], color="gray", label="Demonstration Sinusoidal",zorder=7,  linestyle="dotted")
         # scatter plot the target with a green x
         target_pos = axs.scatter(1500, target[j], color="green", marker='x', label="target", s=100, zorder=10)
         if j == 0:
-            axs.set_ylim([0.5, 0.6])
+            # axs.set_ylim([0.5, 0.6])
             axs.set_ylabel("EEF")
-        elif j == 1:
-            axs.set_ylim([0., 0.5])
-        else:
-            axs.set_ylim([0.25, 0.7])
+        # elif j == 1:
+            # axs.set_ylim([0., 0.5])
+        # else:
+            # axs.set_ylim([0.25, 0.7])
         decorate_axis(axs)
         axs.set_aspect('auto')
         # get the "t_application" from the data, and draw a dashed vertical line with label "Time of force application"
@@ -302,9 +319,10 @@ def plot_reactive():
         axs.set_xticks([0, 250, 500, 750, 1000, 1250, 1500])
         axs.set_xticklabels([0, 2.5, 5, 7.5, 10, 12.5, 15])
         axs.set_xlabel("time (s)")
+        axs.set_title(axis_names[j])
 
     fig.tight_layout(pad=0.5, w_pad=0.1, h_pad=0.1, rect=(0, 0.075, 1, 1))
-    plt.legend(bbox_to_anchor=(-0.6, -0.28), loc='lower center', ncol=5, fancybox=True, shadow=True)
+    plt.legend(bbox_to_anchor=(-0.6, -0.28), loc='lower center', ncol=6, fancybox=True, shadow=True)
     plt.savefig("plots/"+NICE_NAME + ".svg", dpi=100)
     plt.savefig("plots/"+NICE_NAME + ".png", dpi=100)
     plt.savefig("plots/"+NICE_NAME + ".pdf", dpi=100)
