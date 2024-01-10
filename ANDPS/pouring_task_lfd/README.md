@@ -1,4 +1,4 @@
-# Physical Robot Experiment Pouring Task (Experiment 4)
+# Physical Robot Experiment Pouring Task (Experiment 3)
 With this experiment we showcase that ANDPs:
 - Work with realistic demonstrations,
 - and can learn a task that requires precision and end-effector orientation control
