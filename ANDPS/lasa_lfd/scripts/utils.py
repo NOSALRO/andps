@@ -8,8 +8,6 @@ from itertools import combinations
 
 # ----------- Pytorch -----------
 # Custom Dataset class used for accessing lasa dataset through pytorch dataloaders
-
-
 class CustomDataset(Dataset):
     """ Custom Linear Movement Dataset. """
 
@@ -29,8 +27,6 @@ class CustomDataset(Dataset):
         return self.x[idx], self.y[idx]
 
 # Lasa simple weight module / first order / known target
-
-
 class net_first_order(nn.Module):
     def __init__(self, ds_dim, N, target, device='cpu'):
         super(net_first_order, self).__init__()
@@ -75,21 +71,15 @@ class net_first_order(nn.Module):
 class simple_nn(nn.Module):
     def __init__(self, dim):
         super(simple_nn, self).__init__()
-        self.fc1 = nn.Linear(dim, 28)  # prev 20
-        # self.fc2 = nn.Linear(28, 28)
-        # self.fc3 = nn.Linear(28, 28)
+        self.fc1 = nn.Linear(dim, 28)  
         self.fc4 = nn.Linear(28, dim)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
-        # x = F.relu(self.fc3(x))
         x = self.fc4(x)
         return x
 
 # Lasa one hot weight module / first order / known target
-
-
 class net_one_hot(nn.Module):
     def __init__(self, ds_dim, N, target, num_of_one_hots, device='cpu'):
         super().__init__()
@@ -117,76 +107,6 @@ class net_one_hot(nn.Module):
     def forward(self, x, disp=True):
         batch_size = x.shape[0]
         s_all = torch.zeros((1, self.ds_dim)).to(x.device)
-        # w_all = torch.zeros((batch_size, self.N))
-        w_all = self.all_weights(x)
-        # w_all = torch.nn.functional.softmax(w_all, dim=1)
-        if disp:
-            print(w_all)
-        reA = []
-        for i in range(self.N):
-            A = (self.all_params_B_A[i].weight + self.all_params_C_A[i].weight)
-            reA.append(A)
-            s_all = s_all + torch.mul(w_all[:, i].view(batch_size, 1), torch.mm(
-                A, (self.x_tar-x[:, :2]).transpose(0, 1)).transpose(0, 1))
-        return s_all, w_all, reA
-
-# Lasa cnn weight module / first order / known target
-
-
-class CNN_lasa_image(nn.Module):
-    def __init__(self, classes, dim, N, images):
-        super().__init__()
-        self.images = [img.detach() for img in images]
-        self.conv1 = nn.Conv2d(1, 5, kernel_size=(5, 5))
-        self.pool1 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
-        self.conv2 = nn.Conv2d(5, 10, kernel_size=(5, 5))
-        self.pool2 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
-        self.fc1 = nn.Linear(1960+dim, 500)
-        #self.bn = nn.BatchNorm1d(1960+dim)
-        self.fc2 = nn.Linear(500, N)
-
-    def forward(self, state):
-        # batch of images
-        img = torch.empty(size=(state.shape[0], 1, 68, 68)).to(state.device)
-        for i in range(state.shape[0]):
-            img[i] = self.images[int(state[i, 2])].clone().detach()
-
-        x = self.pool1(F.relu(self.conv1(img)))
-        x = self.pool2(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)  # flatten all dimensions except batch
-        # print(x.shape)
-        # print(x)
-        x = torch.cat((x, state[:, :2]), dim=1)
-        x = F.relu(self.fc1(x))
-        x = F.softmax(self.fc2(x), dim=1)
-
-        return x
-
-
-class lasa_images_net_fo(nn.Module):
-    def __init__(self, ds_dim, N, target, classes, images, device='cpu'):
-        super().__init__()
-        self.N = N
-        self.ds_dim = ds_dim
-        self.n_params = ds_dim
-        self.all_weights = CNN_lasa_image(
-            classes, self.ds_dim, N, images).to(device)
-        self.all_params_B_A = nn.ModuleList(
-            [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
-        # self.images = images
-        for i in range(N):
-            geotorch.positive_semidefinite(self.all_params_B_A[i])
-
-        self.all_params_C_A = nn.ModuleList(
-            [nn.Linear(self.n_params, self.n_params, bias=False) for i in range(N)])
-
-        for i in range(N):
-            geotorch.skew(self.all_params_C_A[i])
-        self.x_tar = torch.Tensor(target).view(-1, ds_dim).to(device)
-
-    def forward(self, x, disp=True):
-        batch_size = x.shape[0]
-        s_all = torch.zeros((1, self.ds_dim)).to(x.device)
         w_all = self.all_weights(x)
         if disp:
             print(w_all)
@@ -197,14 +117,11 @@ class lasa_images_net_fo(nn.Module):
             s_all = s_all + torch.mul(w_all[:, i].view(batch_size, 1), torch.mm(
                 A, (self.x_tar-x[:, :2]).transpose(0, 1)).transpose(0, 1))
         return s_all, w_all, reA
-
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # ------------ Dataset -------------
-
-
 def smooth(a, WSZ):
     # a: NumPy 1-D array containing the data to be smoothed
     # WSZ: smoothing window size needs, which must be odd number,
@@ -216,8 +133,6 @@ def smooth(a, WSZ):
     return np.concatenate((start, out0, stop))
 
 # Error
-
-
 def compute_error(X, Y_train, Y_model, r=0.6, q=0.4, eps=1e-20):
     assert (X.shape[0] == Y_train.shape[0] and X.shape[1] == Y_train.shape[1])
     assert (X.shape[0] == Y_model.shape[0] and X.shape[1] == Y_model.shape[1])
@@ -268,8 +183,6 @@ def n_choose_k_dataset_split(total_demos, test_num):
     return train_idxs, test_idxs
 
 # Train test and val are unique
-
-
 def train_test_val_split(seed, data, train_num=4, val_num=2, test_num=1):
     if (train_num+val_num+test_num != 7):
         print("Split values must add up to 7")
@@ -319,8 +232,6 @@ def train_test_val_split(seed, data, train_num=4, val_num=2, test_num=1):
     return X_train, Y_train, X_val, Y_val, X_test, Y_test
 
 # lasa dataset to numpy array (smoothed position and vels are calulated as ddot)
-
-
 def lasa_to_numpy(data, ids=[0, 1, 2, 3, 4, 5, 6], smooth_val=5):
     demos = data.demos
     demo_0 = demos[ids[0]]

@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 
 # from palettable.scientific.diverging import Vik_5
 # colors = Vik_5.mpl_colors
@@ -46,13 +44,10 @@ def decorate_axis(ax, remove_left=True):
 # EXPERIMENT = 'andps'
 # NICE_NAME = 'ANDPs'
 # TITLE = 'ANDPs'
-# EXPERIMENT = 'SEDS'
-# NICE_NAME = 'SEDS'
-# TITLE = 'SEDS'
-EXPERIMENT = 'lpv'
-NICE_NAME = 'LPV-DS'
-TITLE = 'LPV-DS'
-# # lasa_dataset_folder = os.path.join('data', 'lasa')
+EXPERIMENT = 'seds'
+NICE_NAME = 'SEDS'
+TITLE = 'SEDS'
+
 
 
 # names = ["JShape", "Angle", "Khamesh", "LShape", "PShape", "RShape", "Sharpc", "Sine", "Spoon", "Trapezoid", "Worm", "WShape"]
@@ -88,7 +83,6 @@ for id in range(len(names)):
 
     ax0 = axs[ax_id_i][ax_id_j]
     decorate_axis(ax0)
-
 
     demos = all_data['dataset_pos']
     starting_points = all_data['initial_pos']
