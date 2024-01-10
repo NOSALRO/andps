@@ -1,4 +1,4 @@
-# mitating 2D Trajectories (Experiment 1)
+# Imitating 2D Trajectories (Experiment 1)
 Lasa Learning from Demonstration
 **To be updated - placeholder**
 
@@ -26,5 +26,5 @@ In order to populate the data folder run the script named "generate_datasets.py"
 ## Simple NN
 ![](plots/results/simple_nn/NN.png)
 
-## LPV-DS
-![](plots/results/lpv/LPV-DS.png)
+## SEDS
+![](plots/results/seds/seds.png)
