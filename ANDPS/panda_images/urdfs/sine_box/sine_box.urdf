@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot name="sine_box">
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.4"/>
+            <inertia ixx="0.002333333"  ixy="0"  ixz="0" iyy="0.002333333" iyz="0" izz="0.002" />
+        </inertial>
+
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="sine_box.dae" scale="0.1 1 1" />
+            </geometry>
+        </visual>
+
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="sine_box.dae" scale="0.1 1 1" />
+            </geometry>
+        </collision>
+    </link>
+</robot>
