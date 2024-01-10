@@ -11,8 +11,6 @@ from utils import andps_images as andps, CustomDataset, simple_cnn
 from torchvision import transforms
 convert_tensor = transforms.ToTensor()
 
-
-
 # EXPERIMENT = 'ANDPS'
 # EXPERIMENT_NICE_NAME = 'andps_images'
 EXPERIMENT = 'CNN'
@@ -116,14 +114,14 @@ graphics.look_at((-2.5, 1.0, 1.), (0.0, 0.0, 0.5))
 
 # record images from main camera/graphics
 graphics.camera().record(True)
-graphics.record_video(TARGET_MOTION+"-env-eval.mp4", simu.graphics_freq())
+graphics.record_video(EXPERIMENT_NICE_NAME +"_"+TARGET_MOTION+"-env-eval.mp4", simu.graphics_freq())
 
 # add camera
 im_width = 64
 im_height = 64
 camera = rd.sensor.Camera(graphics.magnum_app(), im_width, im_height)
 camera.camera().record(True)
-camera.record_video(TARGET_MOTION+"-pov-eval.mp4")
+camera.record_video(EXPERIMENT_NICE_NAME +"_"+TARGET_MOTION+"-pov-eval.mp4")
 
 # make camera look forward, attach to ee, add to simu
 tf = dartpy.math.Isometry3()
@@ -167,10 +165,13 @@ continue_simu = True
 if EXPERIMENT == 'ANDPS':
     num_DS = 4
     net = andps(3, num_DS, target, device)
+    net.load_state_dict(torch.load("models/panda_image_100.pt", map_location=device))
 elif EXPERIMENT == 'CNN':
-    net = simple_cnn(3)
+    net = simple_cnn(ds_dim=3)
+    net.load_state_dict(torch.load("models/simple_cnn_100.pt", map_location=device))
+
 net.to(device)
-net.load_state_dict(torch.load("models/" +EXPERIMENT_NICE_NAME+ "_100.pt"))
+
 net.eval()
 while (continue_simu):
     t += dt
@@ -182,17 +183,13 @@ while (continue_simu):
             # noise perturbation is handled in the get_state function so we only deal with push here
             if (PERTURBATION_TYPE == "push"):
                 if (0 <= t and t <= 0.2):
-                    robot.set_external_force(eef_link_name, [-50., -100., 80.])
-                    print("push 1")
-                    print(t, dt)
-                elif (4 <= t and t <= 4.5):
-                    robot.set_external_force(eef_link_name, [50., 10., 60.])
-                    print("push 2")
-                    print(t, dt)
+                    robot.set_external_force(eef_link_name, [-50., -100., -80.])
+                elif (4 <= t and t <= 4.3):
+                    robot.set_external_force(eef_link_name, [0., 100., 100.])
                 else:
                     robot.set_external_force(eef_link_name, [0., 0., 0.])
             
-        elif (CHANGE_IMAGE and 0.99<=t<=1.0):
+        elif (CHANGE_IMAGE and 2.49<=t<=2.5):
             print("changing image")
             # let's remove the box
             simu.remove_robot(box)
@@ -212,7 +209,6 @@ while (continue_simu):
         eef_tf = robot.body_pose(eef_link_name)
         vel_rot = controller.update(eef_tf)[0][:3]
 
-        # print(get_state(robot,camera.image()))
         vel_xyz = net(torch.Tensor(get_state(robot, camera.image(
         )).reshape(-1, 64*64 + 3)).to(device)).detach().cpu().numpy().copy()
         vel = np.concatenate((vel_rot, vel_xyz.reshape(3,)))
@@ -234,11 +230,6 @@ while (continue_simu):
         images = np.dstack((images, image_as_grayscale_array(camera.image())))
 
 
-fig = plt.figure(figsize=(10, 7))
-ax = plt.axes(projection="3d")
-
-ax.scatter(eef_trajectory[:, 0], eef_trajectory[:, 1],
-           eef_trajectory[:, 2], c='r')
 data = np.load('data/'+TARGET_MOTION+'.npz')
 
 
@@ -250,7 +241,7 @@ elif (APPLY_PERTURBATION and PERTURBATION_TYPE == "noise"):
              train=data['np_X'][:, :3], test=eef_trajectory, images=images, noise_percentage=NOISE_PERCENTAGE)
 elif (CHANGE_IMAGE):
     np.savez('data/'+EXPERIMENT_NICE_NAME+"_"+TARGET_MOTION+'_to_'+TARGET_MOTION_TWO+'_eval.npz',
-             train=data['np_X'][:, :3], test=eef_trajectory, images=images, t_change=1)
+             train=data['np_X'][:, :3], test=eef_trajectory, images=images, t_change=2.5)
 else:
     np.savez('data/'+EXPERIMENT_NICE_NAME+"_"+TARGET_MOTION+'_eval.npz',
              train=data['np_X'][:, :3], test=eef_trajectory, images=images)
