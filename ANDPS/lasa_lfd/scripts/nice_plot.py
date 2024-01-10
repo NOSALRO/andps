@@ -1,9 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-
-# from palettable.scientific.diverging import Vik_5
-# colors = Vik_5.mpl_colors
 from palettable.scientific.diverging import Vik_11
 colors = Vik_11.mpl_colors
 
@@ -60,7 +57,6 @@ temp = sorted(zip(names, num_DSs))
 num_DSs = [x for _, x in temp]
 names = [x for x, _ in temp]
 
-N_trains = 35
 np.random.seed(3)
 
 rows = 1
