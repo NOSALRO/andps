@@ -11,8 +11,6 @@ from utils import andps_images as andps, CustomDataset, simple_cnn
 from torchvision import transforms
 convert_tensor = transforms.ToTensor()
 
-
-
 # EXPERIMENT = 'ANDPS'
 # EXPERIMENT_NICE_NAME = 'andps_images'
 EXPERIMENT = 'CNN'
@@ -167,7 +165,7 @@ continue_simu = True
 if EXPERIMENT == 'ANDPS':
     num_DS = 4
     net = andps(3, num_DS, target, device)
-    net.load_state_dict(torch.load("models/panda_image_400.pt", map_location=device))
+    net.load_state_dict(torch.load("models/panda_image_100.pt", map_location=device))
 elif EXPERIMENT == 'CNN':
     net = simple_cnn(ds_dim=3)
     net.load_state_dict(torch.load("models/simple_cnn_100.pt", map_location=device))
@@ -186,12 +184,8 @@ while (continue_simu):
             if (PERTURBATION_TYPE == "push"):
                 if (0 <= t and t <= 0.2):
                     robot.set_external_force(eef_link_name, [-50., -100., -80.])
-                    print("push 1")
-                    print(t, dt)
                 elif (4 <= t and t <= 4.3):
                     robot.set_external_force(eef_link_name, [0., 100., 100.])
-                    print("push 2")
-                    print(t, dt)
                 else:
                     robot.set_external_force(eef_link_name, [0., 0., 0.])
             
@@ -215,7 +209,6 @@ while (continue_simu):
         eef_tf = robot.body_pose(eef_link_name)
         vel_rot = controller.update(eef_tf)[0][:3]
 
-        # print(get_state(robot,camera.image()))
         vel_xyz = net(torch.Tensor(get_state(robot, camera.image(
         )).reshape(-1, 64*64 + 3)).to(device)).detach().cpu().numpy().copy()
         vel = np.concatenate((vel_rot, vel_xyz.reshape(3,)))

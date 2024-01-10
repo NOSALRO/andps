@@ -7,10 +7,10 @@ from utils import andps_images as andps,  CustomDataset, simple_cnn
 from torchvision import transforms
 
 
-# EXPERIMENT = 'ANDPS'
-# EXPERIMENT_NICE_NAME = 'andps_images'
-EXPERIMENT = 'CNN'
-EXPERIMENT_NICE_NAME = 'simple_cnn'
+EXPERIMENT = 'ANDPS'
+EXPERIMENT_NICE_NAME = 'andps_images'
+# EXPERIMENT = 'CNN'
+# EXPERIMENT_NICE_NAME = 'simple_cnn'
 
 convert_tensor = transforms.ToTensor()
 
