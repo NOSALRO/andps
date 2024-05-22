@@ -1,6 +1,6 @@
 # Sensorimotor Learning with Stability Guarantees via Autonomous Neural Dynamic Policies
 
-Paper submitted to the Special Issue on "Learning and Intelligent Optimization" of the ACM Transactions on Evolutionary Learning and Optimization (TELO) journal.
+Paper submitted to the Robotics and Autonomous Systems Journal.
 
 ![Screenshot from 2024-01-10 15-45-20](https://github.com/NOSALRO/andps/assets/50770773/78e57186-d31e-46d6-8027-3f3df28a995e)
 
