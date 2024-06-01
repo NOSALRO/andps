@@ -28,8 +28,8 @@ If you use this code in a scientific publication, please use the following citat
 Konstantinos Chatzilygeroudis was supported by the [Hellenic Foundation for Research and Innovation](https://www.elidek.gr/en/homepage/) (H.F.R.I.) under the "3rd Call for H.F.R.I. Research Projects to support Post-Doctoral Researchers" (Project Acronym: [NOSALRO](https://nosalro.github.io/), Project Number: 7541). Dimitrios Kanoulas and Valerio Modugno were supported by the UKRI Future Leaders Fellowship [MR/V025333/1] (RoboHike).
 
 <p align="center">
-<img src="https://www.elidek.gr/wp-content/themes/elidek/images/elidek_logo_en.png" alt="logo_elidek"/>
-<img src="https://www.cinuk.org/content/uploads/2022/11/UKRI-logo2.png" alt="logo_ukri" width="25%"/>
+<img src="https://www.elidek.gr/wp-content/themes/elidek/images/elidek_logo_en.png" alt="logo_elidek"/><br/>
+<img src="https://www.cinuk.org/content/uploads/2022/11/UKRI-logo2.png" alt="logo_ukri" width="33%"/>
 <p/>
 
 This work was conducted as collaboration of the [Computational Intelligence Lab](http://cilab.math.upatras.gr/) (CILab), Department of Mathematics, University of Patras, Greece, and the [Robot Perception and Learning Lab](https://rpl-as-ucl.github.io/) (RPL Lab), Department of Computer
