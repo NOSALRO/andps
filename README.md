@@ -29,7 +29,7 @@ Konstantinos Chatzilygeroudis was supported by the [Hellenic Foundation for Rese
 
 <p align="center">
 <img src="https://www.elidek.gr/wp-content/themes/elidek/images/elidek_logo_en.png" alt="logo_elidek"/>
-<img src="https://www.cinuk.org/content/uploads/2022/11/UKRI-logo2.png" alt="logo_ukri"/>
+<img src="https://www.cinuk.org/content/uploads/2022/11/UKRI-logo2.png" alt="logo_ukri" width="25%"/>
 <p/>
 
 This work was conducted as collaboration of the [Computational Intelligence Lab](http://cilab.math.upatras.gr/) (CILab), Department of Mathematics, University of Patras, Greece, and the [Robot Perception and Learning Lab](https://rpl-as-ucl.github.io/) (RPL Lab), Department of Computer
