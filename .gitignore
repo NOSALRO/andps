@@ -130,4 +130,4 @@ dmypy.json
 .vscode/
 
 # ingore generated dataset
-ANDPS/lasa_lfd/data
+experiments/lasa_lfd/data
