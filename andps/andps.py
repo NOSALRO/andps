@@ -69,11 +69,8 @@ class ANDP(nn.Module):
         self.x_target = attractor.view(-1, self.ds_dim).to(device)
 
     def forward(self, x_cur):
-
         assert x_cur.shape[1] == self.ds_dim, "The input state dimension must be equal to the state dimension of the dynamical system"
-
         batch_size = x_cur.shape[0]
-
         # initialize the sum of the non-linear combination of the linear dynamical systems
         out = torch.zeros((1, self.ds_dim)).to(x_cur.device)
 
