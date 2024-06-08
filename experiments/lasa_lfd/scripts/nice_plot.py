@@ -81,13 +81,10 @@ for i, (k, name) in enumerate(zip(ks, names)):
     ax0.set_title(name)
 
     train_eval = all_data['train_trajectory']
-
     test_eval = all_data['test_trajectory']
-    print(test_eval.shape)
-    print(train_eval.shape)
+
     Y, X = all_data['Y'], all_data['X']
     U, V = all_data['U'], all_data['V']
-
 
     streams = ax0.streamplot(X, Y, U, V, linewidth=1,color=colors[4], zorder=1,  arrowstyle='->')
     demon = ax0.scatter(demos[0:-1:8, 0], demos[0:-1:8, 1], color=colors[6], s=3, label='Demonstrations', zorder=2)
@@ -111,12 +108,12 @@ fig.tight_layout(pad=0.5, w_pad=0.1, h_pad=0.1,
                  rect=(0, 0.075, 1, 1))  # , h_pad=4.75)
 lgnd = fig.legend(handles=[demon, evalu_train, evalu_test, init_pos, target_pos], loc="lower center", bbox_to_anchor=(0.5, 0.0005),
                   ncol=5, fancybox=True, shadow=True)  # , loc=0)#,loc = "upper left")
-lgnd.legend_handles[0]._sizes = [30]
-lgnd.legend_handles[1]._sizes = [30]
-lgnd.legend_handles[2]._sizes = [30]
-lgnd.legend_handles[3]._sizes = [30]
-lgnd.legend_handles[4]._sizes = [30]
-# plt.show()
+lgnd.legend_handles[0].set_sizes([30])
+lgnd.legend_handles[1].set_sizes([30])
+lgnd.legend_handles[2].set_sizes([30])
+lgnd.legend_handles[3].set_sizes([30])
+lgnd.legend_handles[4].set_sizes([30])
+
 # save png
 plt.savefig("plots/results/"+EXPERIMENT+"/" + NICE_NAME + ".png")
 # save pdf
