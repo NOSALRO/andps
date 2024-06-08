@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "andps"
+version = "0.1.0"
+authors = [{ name = "Dionis Totsila", email = "dionis.totsila@inria.fr" }]
+description = "A Python package for the Autonomous Neural Dynamic Policies"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["torch", "geotorch @ git+https://github.com/Lezcano/geotorch.git"]
+
+[project.urls]
+Homepage = "https://github.com/NOSALRO/andps/"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["experiments*"]
