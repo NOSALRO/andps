@@ -147,10 +147,7 @@ N = 2 # number of Dynamical Systems
 attractor = torch.Tensor([0.0, 0.0, 0.0]) # attractor point
 hidden_layers = [128, 64, 32]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = ANDP(ds_dim, N, attractor, CNN_weight(dim, num_DS), device=device).to(device)
-
-
-
+model = cnn_ANDP(ds_dim, N, attractor, CNN_weight(dim, num_DS), device=device).to(device)
 ```
 
 
