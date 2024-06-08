@@ -137,9 +137,12 @@ def train_test_val_split(seed, data, train_num=4, val_num=2, test_num=1):
         return lasa_to_numpy(data, selected_idxs), selected_idxs
 
     # Split data
-    (x_train, y_train), train_indices = get_split(indices, train_num)
-    (x_val, y_val), val_indices = get_split(indices, val_num)
-    (x_test, y_test), test_indices = get_split(indices, test_num)
+    split_train = get_split(indices, train_num)
+    (x_train, y_train), train_indices = split_train[0], split_train[1]
+    split_val = get_split(indices, val_num)
+    (x_val, y_val), val_indices = split_val[0], split_val[1]
+    split_test = get_split(indices, test_num)
+    (x_test, y_test), test_indices = split_test[0], split_test[1]
 
     # Print the indices for each split
     print("Train indices:", train_indices)
