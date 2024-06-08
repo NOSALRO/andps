@@ -6,10 +6,11 @@ import geotorch
 
 class ANDP(nn.Module):
     """The Autonomous Neural Dynamic Policy (ANDP) pytorch model"""
+
     def __init__(self, ds_dim: int, N: int, attractor: torch.Tensor, all_weights: nn.Module = None, hidden_layers: list = [10], device='cpu'):
         '''
             Initializes the Autonomous Neural Dynamic Policy (ANDP) model
-            
+
             Args:
             ds_dim (int): Dimensions of the Dynamical System(s)
             N (int): Number of Dynamical Systems
@@ -52,7 +53,7 @@ class ANDP(nn.Module):
                 self.all_weights.add_module(
                     f'{i+2}', nn.Linear(hidden_layers[i-1], hidden_layers[i]))
                 self.all_weights.add_module(f'{i+3}', nn.ReLU())
-            
+
             self.all_weights.add_module(
                 f'{len(hidden_layers)+1}', nn.Linear(hidden_layers[-1], N))
             self.all_weights.add_module('softmax', nn.Softmax(dim=1))
@@ -70,7 +71,6 @@ class ANDP(nn.Module):
     def forward(self, x_cur):
 
         assert x_cur.shape[1] == self.ds_dim, "The input state dimension must be equal to the state dimension of the dynamical system"
-
 
         batch_size = x_cur.shape[0]
 
