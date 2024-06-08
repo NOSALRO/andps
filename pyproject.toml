@@ -8,7 +8,7 @@ version = "0.1.0"
 authors = [{ name = "Dionis Totsila", email = "dionis.totsila@inria.fr" }]
 description = "A Python package for the Autonomous Neural Dynamic Policies"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 dependencies = ["torch", "geotorch @ git+https://github.com/Lezcano/geotorch.git"]
 
 [project.urls]
