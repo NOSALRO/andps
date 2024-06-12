@@ -1,7 +1,0 @@
-geotorch
-matplotlib
-numpy
-palettable
-pyLasaDataset
-scipy
-torch
