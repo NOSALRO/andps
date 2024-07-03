@@ -1,0 +1,29 @@
+/* Styling for <pre> tag */
+pre {
+    background-color: #f5f5f5; /* Light grey background */
+    border: 1px solid #ccc; /* Light grey border */
+    border-radius: 8px; /* Rounded corners */
+    padding: 16px; /* Padding inside the box */
+    overflow: auto; /* Allow scrolling if the content overflows */
+    font-family: 'Courier New', Courier, monospace; /* Monospace font */
+    line-height: 1.5; /* Line height for better readability */
+}
+
+/* Styling for <code> tag inside <pre> */
+pre code {
+    color: #333; /* Dark text color */
+    background-color: #f5f5f5; /* Inherit background color */
+    font-family: inherit; /* Inherit font from <pre> */
+    font-size: 14px; /* Font size */
+}
+
+/* Highlight keywords */
+pre code .keyword {
+    color: #152d47; /* Red color for keywords */
+    font-weight: bold; /* Bold keywords */
+}
+
+/* Highlight strings */
+pre code .string {
+    color: #62a3ee; /* Blue color for strings */
+}
