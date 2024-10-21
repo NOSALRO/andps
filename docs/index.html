@@ -256,33 +256,38 @@
             <h2 class="subtitle has-text-centered">
               Qualitative results for ANDPs, SEDS, and NNs in selected splits of the LASA dataset.
             </h2>
-            <img src="static/images/lasa_qualitative_0.png" alt="Lasa Qualitative 1/5" style="width: 80%; margin-left: 10%;">
+            <img src="static/images/lasa_qualitative_0.png" alt="Lasa Qualitative 1/5"
+              style="width: 80%; margin-left: 10%;">
           </div>
           <div class="item">
             <h2 class="subtitle has-text-centered">
               Qualitative results for ANDPs, SEDS, and NNs in selected splits of the LASA dataset.
             </h2>
-            <img src="static/images/lasa_qualitative_1.png" alt="Lasa Qualitative 2/5" style="width: 80%; margin-left: 10%;">
+            <img src="static/images/lasa_qualitative_1.png" alt="Lasa Qualitative 2/5"
+              style="width: 80%; margin-left: 10%;">
           </div>
           <div class="item">
             <h2 class="subtitle has-text-centered">
               Qualitative results for ANDPs, SEDS, and NNs in selected splits of the LASA dataset.
             </h2>
-            <img src="static/images/lasa_qualitative_2.png" alt="Lasa Qualitative 3/5" style="width: 80%; margin-left: 10%;">
+            <img src="static/images/lasa_qualitative_2.png" alt="Lasa Qualitative 3/5"
+              style="width: 80%; margin-left: 10%;">
           </div>
-        <div class="item">
-          <h2 class="subtitle has-text-centered">
-            Qualitative results for ANDPs, SEDS, and NNs in selected splits of the LASA dataset.
-          </h2>
-          <img src="static/images/lasa_qualitative_3.png" alt="Lasa Qualitative 4/5" style="width: 80%; margin-left: 10%;">
+          <div class="item">
+            <h2 class="subtitle has-text-centered">
+              Qualitative results for ANDPs, SEDS, and NNs in selected splits of the LASA dataset.
+            </h2>
+            <img src="static/images/lasa_qualitative_3.png" alt="Lasa Qualitative 4/5"
+              style="width: 80%; margin-left: 10%;">
+          </div>
+          <div class="item">
+            <h2 class="subtitle has-text-centered">
+              Qualitative results for ANDPs, SEDS, and NNs in selected splits of the LASA dataset.
+            </h2>
+            <img src="static/images/lasa_qualitative_4.png" alt="ANDPs Lasa Qualitative 5/5"
+              style="width: 80%; margin-left: 10%;">
+          </div>
         </div>
-      <div class="item">
-        <h2 class="subtitle has-text-centered">
-          Qualitative results for ANDPs, SEDS, and NNs in selected splits of the LASA dataset.
-        </h2>
-        <img src="static/images/lasa_qualitative_4.png" alt="ANDPs Lasa Qualitative 5/5" style="width: 80%; margin-left: 10%;">
-      </div>
-    </div>
       </div>
     </div>
   </section>
@@ -524,17 +529,7 @@
         <h2 class="title is-3">Supplementary Experiment: Learning a spiral motion in joint space</h2>
         <p>In order to showcase that ANDPs can work with arbitrary state spaces
           <sup><a href="#footnote1">1</a></sup>, we learn the spiral motion but this time in joint space (7 degrees of
-          freedom), this means that <strong><i>x</i></strong> ≡ <strong><i>x<sub>c</sub></i></strong> =
-          <span style="display:inline-block; vertical-align:middle;">
-            <table style="display:inline-table;">
-              <tr>
-                <td>θ<sub>0</sub></td>
-                <td>θ<sub>1</sub></td>
-                <td>⋯</td>
-                <td>θ<sub>6</sub></td>
-              </tr>
-            </table>
-          </span>
+          freedom), this means that <strong>x</strong> ≡ <strong>x</strong><sub>c</sub> = [θ<sub>0</sub>,θ<sub>1</sub>,...,θ<sub>6</sub>]
           and the output is the desired velocity profile <strong>ẋ<sub>c</sub></strong> that the joints should follow.
           The data collection process of this experiment is similar to the one described above, with the only difference
           that this time on every timestep we collect the angle of every joint of the robot, as well as their
@@ -544,8 +539,7 @@
 
         <hr>
         <p id="footnote1"><sup>1</sup> Formally, we should require that the controllable part of the state forms a
-          Euclidean space, which holds for the reduced coordinates system (joint space). The derivations and discussion
-          on this topic are out of the scope of this paper, and will be discussed in future work.</p>
+          Euclidean space, which holds for the reduced coordinates system (joint space) with limits.</p>
 
       </div>
 
