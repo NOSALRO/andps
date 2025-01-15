@@ -25,11 +25,15 @@ If you use this code in a scientific publication, please use the following citat
 
 ```bibtex
 @article{dionis2024andps,
-        title={{Sensorimotor Learning with Stability Guarantees via Autonomous Neural Dynamic Policies}},
         author={Totsila, Dionis and Chatzilygeroudis, Konstantinos and Modugno, Valerio and Hadjivelichkov, Denis and Kanoulas, Dimitrios},
-        year={2024},
-        journal={{Preprint}}
-      }
+        journal={IEEE Robotics and Automation Letters},
+        title={Sensorimotor Learning With Stability Guarantees via Autonomous Neural Dynamic Policies},
+        year={2025},
+        volume={10},
+        number={2},
+        pages={1760-1767},
+        keywords={Robots;Artificial neural networks;Dynamical systems;Stability analysis;Asymptotic stability;Aerospace electronics;Robot learning;Imitation learning;Trajectory;Heuristic algorithms;Learning from demonstration;machine learning for robot control;sensorimotor learning},
+        doi={10.1109/LRA.2024.3524878}}
 ```
 
 ## How to use the library
